@@ -245,6 +245,26 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 		 * <br>
 		 * <2> 处，如果根节点或子节点不使用默认命名空间，调用 BeanDefinitionParserDelegate#parseCustomElement(Element ele) 方法，执行自定义解析。
 		 */
+
+		/**
+		 * 该函数完毕，则 BeanDefinition 的解析过程已经全部完成，下面做一个简要的总结：
+		 * 1、解析 BeanDefinition 的入口在 DefaultBeanDefinitionDocumentReader 的#parseBeanDefinitions(Element root, BeanDefinitionParserDelegate delegate) 方法。
+		 * 该方法会根据命令空间来判断标签是默认标签还是自定义标签，其中：
+		 * 	①、默认标签，由 #parseDefaultElement(Element ele, BeanDefinitionParserDelegate delegate) 方法来实现
+		 *  ②、自定义标签，由 BeanDefinitionParserDelegate 的 #parseCustomElement(Element ele, @Nullable BeanDefinition containingBd) 方法来实现。
+		 * 在默认标签解析中，会根据标签名称的不同进行 import、alias、bean、beans 四大标签进行处理。其中 bean 标签的解析为核心，它由 processBeanDefinition(Element ele, BeanDefinitionParserDelegate delegate) 方法实现。
+		 *
+		 * 2、processBeanDefinition(Element ele, BeanDefinitionParserDelegate delegate) 方法，开始进入解析核心工作，分为三步：
+		 * 	①、解析默认标签下的默认标签：BeanDefinitionParserDelegate#parseBeanDefinitionElement(Element ele, ...) 方法。该方法会依次解析 <bean> 标签的属性、各个子元素，解析完成后返回一个 GenericBeanDefinition 实例对象。
+		 * 	②、解析默认标签下的自定义标签：BeanDefinitionParserDelegate#decorateBeanDefinitionIfRequired(Element ele, BeanDefinitionHolder definitionHolder) 方法。
+		 * 	③、注册解析的 BeanDefinition：BeanDefinitionReaderUtils#registerBeanDefinition(BeanDefinitionHolder definitionHolder, BeanDefinitionRegistry registry) 方法。
+		 *
+		 * 注：
+		 * parseBeanDefinitions(Element root, BeanDefinitionParserDelegate delegate)
+		 * 和
+		 * processBeanDefinition(Element ele, BeanDefinitionParserDelegate delegate)
+		 * 不一样，注意看
+		 */
 	}
 
 	/**
@@ -261,7 +281,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 			// alias
 			processAliasRegistration(ele);
 		} else if (delegate.nodeNameEquals(ele, BEAN_ELEMENT)) {
-			// bean
+			// bean（核心）
 			processBeanDefinition(ele, delegate);
 		} else if (delegate.nodeNameEquals(ele, NESTED_BEANS_ELEMENT)) {
 			// beans
@@ -409,11 +429,16 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 	/**
 	 * Process the given bean element, parsing the bean definition
 	 * and registering it with the registry.
+	 * <p>
+	 * DefaultBeanDefinitionDocumentReader 的 #processBeanDefinition(Element ele, BeanDefinitionParserDelegate delegate) 方法，负责 <bean> 标签的解析：
+	 * 1、在解析过程中，首先调用 BeanDefinitionParserDelegate#parseBeanDefinitionElement(Element ele) 方法，完成基本属性、默认标签的解析。
+	 * 基本属性、
+	 * 默认标签：<meta>、<lookup-method>、<replace-method>、<constructor-arg>、<property>、<qualifier>
+	 * 2、如果解析成功（返回的 bdHolder != null ），完成自定义标签元素的解析，调用 BeanDefinitionParserDelegate#decorateBeanDefinitionIfRequired(Element ele, BeanDefinitionHolder definitionHolder) 方法；
 	 */
 	protected void processBeanDefinition(Element ele, BeanDefinitionParserDelegate delegate) {
 		// 进行 bean 元素解析。
-		// <1> 如果解析成功，则返回 BeanDefinitionHolder 对象。
-		// BeanDefinitionHolder 为 name 和 alias 的 BeanDefinition 对象
+		// <1> 如果解析成功，则返回 BeanDefinitionHolder 对象。BeanDefinitionHolder 为 name 和 alias 的 BeanDefinition 对象
 		// 如果解析失败，则返回 null 。
 		BeanDefinitionHolder bdHolder = delegate.parseBeanDefinitionElement(ele);
 		if (bdHolder != null) {
@@ -430,6 +455,14 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 			// <4> 发出响应事件，通知相关的监听器，已完成该 Bean 标签的解析。
 			getReaderContext().fireComponentRegistered(new BeanComponentDefinition(bdHolder));
 		}
+
+		/**
+		 * 解析工作分为三步：
+		 * 1、解析默认标签。
+		 * 2、解析默认标签后下得自定义标签。
+		 * 3、注册解析后的 BeanDefinition 。
+		 * 经过前面两个步骤的解析，这时的 BeanDefinition 已经可以满足后续的使用要求了，那么接下来的工作就是将这些 BeanDefinition 进行注册，也就是完成第三步。
+		 */
 
 		/**
 		 * 整个过程分为四个步骤：

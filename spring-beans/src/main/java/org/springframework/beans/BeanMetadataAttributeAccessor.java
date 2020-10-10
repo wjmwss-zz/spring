@@ -33,7 +33,6 @@ public class BeanMetadataAttributeAccessor extends AttributeAccessorSupport impl
 	@Nullable
 	private Object source;
 
-
 	/**
 	 * Set the configuration source {@code Object} for this metadata element.
 	 * <p>The exact type of the object will depend on the configuration mechanism used.
@@ -48,17 +47,28 @@ public class BeanMetadataAttributeAccessor extends AttributeAccessorSupport impl
 		return this.source;
 	}
 
-
 	/**
 	 * Add the given BeanMetadataAttribute to this accessor's set of attributes.
+	 *
 	 * @param attribute the BeanMetadataAttribute object to register
+	 *                  <p>
+	 *                  添加 BeanMetadataAttribute 加入到 AbstractBeanDefinition 中
 	 */
 	public void addMetadataAttribute(BeanMetadataAttribute attribute) {
+		//委托 AttributeAccessorSupport 实现
 		super.setAttribute(attribute.getName(), attribute);
+		/**
+		 * 友情提示：
+		 * AbstractBeanDefinition 继承 BeanMetadataAttributeAccessor 类
+		 * BeanMetadataAttributeAccessor 继承 AttributeAccessorSupport 类。
+		 * org.springframework.core.AttributeAccessorSupport ，是接口 AttributeAccessor 的实现者。
+		 * AttributeAccessor 接口定义了与其他对象的元数据进行连接和访问的约定，可以通过该接口对属性进行获取、设置、删除操作。
+		 */
 	}
 
 	/**
 	 * Look up the given BeanMetadataAttribute in this accessor's set of attributes.
+	 *
 	 * @param name the name of the attribute
 	 * @return the corresponding BeanMetadataAttribute object,
 	 * or {@code null} if no such attribute defined

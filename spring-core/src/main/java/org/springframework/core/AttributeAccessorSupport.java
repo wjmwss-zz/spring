@@ -37,19 +37,45 @@ import java.util.Map;
 @SuppressWarnings("serial")
 public abstract class AttributeAccessorSupport implements AttributeAccessor, Serializable {
 
-	/** Map with String keys and Object values. */
+	/**
+	 * Map with String keys and Object values.
+	 */
 	private final Map<String, Object> attributes = new LinkedHashMap<>();
 
-
+	/**
+	 * 添加 BeanMetadataAttribute 加入到 AbstractBeanDefinition 中
+	 *
+	 * @param name  the unique attribute key
+	 * @param value the attribute value to be attached
+	 */
 	@Override
 	public void setAttribute(String name, @Nullable Object value) {
 		Assert.notNull(name, "Name must not be null");
 		if (value != null) {
 			this.attributes.put(name, value);
-		}
-		else {
+		} else {
 			removeAttribute(name);
 		}
+		/**
+		 * 友情提示：
+		 * AbstractBeanDefinition 继承 BeanMetadataAttributeAccessor 类
+		 * BeanMetadataAttributeAccessor 继承 AttributeAccessorSupport 类。
+		 * org.springframework.core.AttributeAccessorSupport ，是接口 AttributeAccessor 的实现者。
+		 * AttributeAccessor 接口定义了与其他对象的元数据进行连接和访问的约定，可以通过该接口对属性进行获取、设置、删除操作。
+		 */
+
+		/**
+		 * 设置元数据后，则可以通过调用 BeanDefinition 的 #getAttribute(String name) 方法来获取属性。代码如下：
+		 *  // AttributeAccessorSupport.java
+		 *  // Map with String keys and Object values.
+		 *  private final Map<String, Object> attributes = new LinkedHashMap<>();
+		 *  @Override
+		 *  @Nullable
+		 *  public Object getAttribute (String name){
+		 * 		Assert.notNull(name, "Name must not be null");
+		 * 		return this.attributes.get(name);
+		 *  }
+		 */
 	}
 
 	@Override
@@ -77,9 +103,9 @@ public abstract class AttributeAccessorSupport implements AttributeAccessor, Ser
 		return StringUtils.toStringArray(this.attributes.keySet());
 	}
 
-
 	/**
 	 * Copy the attributes from the supplied AttributeAccessor to this accessor.
+	 *
 	 * @param source the AttributeAccessor to copy from
 	 */
 	protected void copyAttributesFrom(AttributeAccessor source) {
@@ -89,7 +115,6 @@ public abstract class AttributeAccessorSupport implements AttributeAccessor, Ser
 			setAttribute(attributeName, source.getAttribute(attributeName));
 		}
 	}
-
 
 	@Override
 	public boolean equals(@Nullable Object other) {

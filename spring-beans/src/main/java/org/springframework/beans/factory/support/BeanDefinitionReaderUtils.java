@@ -166,6 +166,7 @@ public abstract class BeanDefinitionReaderUtils {
 	 * @throws BeanDefinitionStoreException if registration failed
 	 *                                      <p>
 	 *                                      BeanDefinitionReaderUtils的registerBeanDefinition函数：注册 BeanDefinition
+	 *                                      这一步结束，BeanDefinition 基于 beanName 和 alias 的维度，都已经注入到缓存中，下一步则是等待初始化使用了
 	 */
 	public static void registerBeanDefinition(BeanDefinitionHolder definitionHolder, BeanDefinitionRegistry registry) throws BeanDefinitionStoreException {
 		// Register bean definition under primary name.
@@ -178,6 +179,7 @@ public abstract class BeanDefinitionReaderUtils {
 		String[] aliases = definitionHolder.getAliases();
 		if (aliases != null) {
 			for (String alias : aliases) {
+				//注册 alias 和 beanName 的映射（SimpleAliasRegistry的registerAlias）
 				registry.registerAlias(beanName, alias);
 			}
 		}

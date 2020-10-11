@@ -68,31 +68,9 @@ import java.util.Set;
 public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 
 	/**
-	 * Indicates that the validation should be disabled.
-	 */
-	public static final int VALIDATION_NONE = XmlValidationModeDetector.VALIDATION_NONE;
-
-	/**
-	 * Indicates that the validation mode should be detected automatically.
-	 */
-	public static final int VALIDATION_AUTO = XmlValidationModeDetector.VALIDATION_AUTO;
-
-	/**
-	 * Indicates that DTD validation should be used.
-	 */
-	public static final int VALIDATION_DTD = XmlValidationModeDetector.VALIDATION_DTD;
-
-	/**
-	 * Indicates that XSD validation should be used.
-	 */
-	public static final int VALIDATION_XSD = XmlValidationModeDetector.VALIDATION_XSD;
-
-	/**
 	 * Constants instance for this class.
 	 */
 	private static final Constants constants = new Constants(XmlBeanDefinitionReader.class);
-
-	private int validationMode = VALIDATION_AUTO;
 
 	private boolean namespaceAware = false;
 
@@ -112,13 +90,13 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 
 	private ErrorHandler errorHandler = new SimpleSaxErrorHandler(logger);
 
-	private final XmlValidationModeDetector validationModeDetector = new XmlValidationModeDetector();
-
 	/**
 	 * Create new XmlBeanDefinitionReader for the given bean factory.
 	 *
 	 * @param registry the BeanFactory to load bean definitions into,
 	 *                 in the form of a BeanDefinitionRegistry
+	 *                 <p>
+	 *                 初始化ResourceLoader
 	 */
 	public XmlBeanDefinitionReader(BeanDefinitionRegistry registry) {
 		super(registry);
@@ -391,13 +369,18 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	 * @param inputSource
 	 * @param resource
 	 * @return
-	 * @throws BeanDefinitionStoreException
+	 * @throws BeanDefinitionStoreException 主要做三件事：
+	 *                                      1、调用 #getValidationModeForResource(Resource resource) 方法，获取指定资源（xml）的验证模式。
+	 *                                      2、调用 DocumentLoader#loadDocument(InputSource inputSource, EntityResolver entityResolver,ErrorHandler errorHandler, int validationMode, boolean namespaceAware) 方法，获取 XML Document 实例。
+	 *                                      3、调用 #registerBeanDefinitions(Document doc, Resource resource) 方法，根据获取的 Document 实例，注册 Bean 信息。
+	 *                                      <p>
+	 *                                      1、2都在 #doLoadDocument(inputSource, resource) 中
 	 */
 	protected int doLoadBeanDefinitions(InputSource inputSource, Resource resource) throws BeanDefinitionStoreException {
 		try {
-			// <1> 获取 XML Document 实例
+			// <1> 获取 XML Document 实例（详细解析见函数体内）
 			Document doc = doLoadDocument(inputSource, resource);
-			// <2> 根据 Document 实例，注册 BeanDefinitions
+			// <2> 根据 Document 实例，注册 BeanDefinitions（详细解析见函数体内）
 			int count = registerBeanDefinitions(doc, resource);
 			if (logger.isDebugEnabled()) {
 				logger.debug("Loaded " + count + " bean definitions from " + resource);
@@ -438,10 +421,26 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	protected Document doLoadDocument(InputSource inputSource, Resource resource) throws Exception {
 		return this.documentLoader.loadDocument(inputSource, getEntityResolver(), this.errorHandler, getValidationModeForResource(resource), isNamespaceAware());
 		/**
-		 * 调用 #getValidationModeForResource(Resource resource) 方法，获取指定资源（xml）的验证模型；
 		 * 调用 DocumentLoader#loadDocument(InputSource inputSource, EntityResolver entityResolver, ErrorHandler errorHandler, int validationMode, boolean namespaceAware) 方法，获取 XML Document 实例。
+		 * 该函数的五个参数分别对应：
+		 * inputSource ：加载 Document 的 Resource 源。
+		 * entityResolver ：解析文件的解析器。【重要】详细解析，见函数体内 #getEntityResolver()
+		 * errorHandler ：处理加载 Document 对象的过程的错误。
+		 * validationMode ：验证模式。【重要】详细解析，见函数体内（IoC 之获取验证模型）调用 #getValidationModeForResource(Resource resource) 方法，获取指定资源（xml）的验证模型；
+		 * namespaceAware ：命名空间支持。如果要提供对 XML 名称空间的支持，则为 true 。
 		 */
 	}
+
+	// 禁用验证模式
+	public static final int VALIDATION_NONE = XmlValidationModeDetector.VALIDATION_NONE;
+	// 自动获取验证模式
+	public static final int VALIDATION_AUTO = XmlValidationModeDetector.VALIDATION_AUTO;
+	// DTD 验证模式
+	public static final int VALIDATION_DTD = XmlValidationModeDetector.VALIDATION_DTD;
+	// XSD 验证模式
+	public static final int VALIDATION_XSD = XmlValidationModeDetector.VALIDATION_XSD;
+	// 验证模式。默认为自动模式。
+	private int validationMode = VALIDATION_AUTO;
 
 	/**
 	 * Determine the validation mode for the specified {@link Resource}.
@@ -451,12 +450,20 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	 * mode, even when something other than {@link #VALIDATION_AUTO} was set.
 	 *
 	 * @see #detectValidationMode
+	 * <p>
+	 * 《请先了解XSD与DTD的区别》
+	 * 获取 xml 文件的验证模式；
+	 * 为什么需要获取验证模式呢？
+	 * XML 文件的验证模式保证了 XML 文件的正确性。
 	 */
 	protected int getValidationModeForResource(Resource resource) {
+		// <1> 获取指定的验证模式
 		int validationModeToUse = getValidationMode();
+		// 首先，如果手动指定，则直接返回
 		if (validationModeToUse != VALIDATION_AUTO) {
 			return validationModeToUse;
 		}
+		// 其次，自动获取验证模式
 		int detectedMode = detectValidationMode(resource);
 		if (detectedMode != VALIDATION_AUTO) {
 			return detectedMode;
@@ -464,8 +471,26 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 		// Hmm, we didn't get a clear indication... Let's assume XSD,
 		// since apparently no DTD declaration has been found up until
 		// detection stopped (before finding the document's root tag).
+		// 最后，使用 VALIDATION_XSD 做为默认
 		return VALIDATION_XSD;
+		/**
+		 * <1> 处，调用 #getValidationMode() 方法，获取指定的验证模式( validationMode )。如果有手动指定，则直接返回。另外，对于 validationMode 属性的设置和获得的代码，代码如下：
+		 * public void setValidationMode(int validationMode) {
+		 * 	  this.validationMode = validationMode;
+		 * }
+		 * public int getValidationMode() {
+		 * 	  return this.validationMode;
+		 * }
+		 *
+		 * <2> 处，调用 #detectValidationMode(Resource resource) 方法，自动获取验证模式。详细解析见函数体内
+		 * <3> 处，使用 VALIDATION_XSD 做为默认。
+		 */
 	}
+
+	/**
+	 * XML 验证模式探测器
+	 */
+	private final XmlValidationModeDetector validationModeDetector = new XmlValidationModeDetector();
 
 	/**
 	 * Detect which kind of validation to perform on the XML file identified
@@ -473,16 +498,16 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	 * definition then DTD validation is used otherwise XSD validation is assumed.
 	 * <p>Override this method if you would like to customize resolution
 	 * of the {@link #VALIDATION_AUTO} mode.
+	 * <p>
+	 * 自动获取验证模式
 	 */
 	protected int detectValidationMode(Resource resource) {
+		// Resource 不可读，抛出 BeanDefinitionStoreException 异常
 		if (resource.isOpen()) {
-			throw new BeanDefinitionStoreException(
-					"Passed-in Resource [" + resource + "] contains an open stream: " +
-							"cannot determine validation mode automatically. Either pass in a Resource " +
-							"that is able to create fresh streams, or explicitly specify the validationMode " +
-							"on your XmlBeanDefinitionReader instance.");
+			throw new BeanDefinitionStoreException("Passed-in Resource [" + resource + "] contains an open stream: " + "cannot determine validation mode automatically. Either pass in a Resource " + "that is able to create fresh streams, or explicitly specify the validationMode " + "on your XmlBeanDefinitionReader instance.");
 		}
 
+		// 打开 InputStream 流
 		InputStream inputStream;
 		try {
 			inputStream = resource.getInputStream();
@@ -493,12 +518,17 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 							"validationMode on your XmlBeanDefinitionReader instance?", ex);
 		}
 
+		// <x> 获取相应的验证模式
 		try {
 			return this.validationModeDetector.detectValidationMode(inputStream);
 		} catch (IOException ex) {
 			throw new BeanDefinitionStoreException("Unable to determine validation mode for [" +
 					resource + "]: an error occurred whilst reading from the InputStream.", ex);
 		}
+		/**
+		 * 核心在于 <x> 处，调用 XmlValidationModeDetector#detectValidationMode(InputStream inputStream) 方法，获取相应的验证模式。
+		 * 详细解析见函数体内
+		 */
 	}
 
 	/**

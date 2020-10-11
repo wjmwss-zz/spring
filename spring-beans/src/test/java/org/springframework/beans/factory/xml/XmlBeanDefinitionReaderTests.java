@@ -16,11 +16,7 @@
 
 package org.springframework.beans.factory.xml;
 
-import java.util.Arrays;
-
 import org.junit.jupiter.api.Test;
-import org.xml.sax.InputSource;
-
 import org.springframework.beans.factory.BeanDefinitionStoreException;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
@@ -30,6 +26,9 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.ObjectUtils;
+import org.xml.sax.InputSource;
+
+import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -65,10 +64,16 @@ public class XmlBeanDefinitionReaderTests {
 		testBeanDefinitions(registry);
 	}
 
+	/**
+	 * 解析 XML 配置文件成对应的 BeanDefinition 们的流程
+	 * #withFreshInputStream() 和 #withImport()
+	 * 相比来说，后者比前者多了一个 <import /> 标签的解析。当然，XmlBeanDefinitionReaderTests 类中，其它方法也可以简单调试下
+	 */
 	@Test
 	public void withImport() {
 		SimpleBeanDefinitionRegistry registry = new SimpleBeanDefinitionRegistry();
 		Resource resource = new ClassPathResource("import.xml", getClass());
+		//new XmlBeanDefinitionReader(registry) 初始化ResourceLoader；reader.loadBeanDefinitions(resource); BeanDefinition 的载入和解析：XML Resource => XML Document => Bean Definition
 		new XmlBeanDefinitionReader(registry).loadBeanDefinitions(resource);
 		testBeanDefinitions(registry);
 	}

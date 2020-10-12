@@ -219,16 +219,94 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	/**
 	 * Return the EntityResolver to use, building a default resolver
 	 * if none specified.
+	 * <p>
+	 * #getEntityResolver() 方法，返回指定的解析器，如果没有指定，则构造一个未指定的默认解析器。
 	 */
 	protected EntityResolver getEntityResolver() {
 		if (this.entityResolver == null) {
 			// Determine default EntityResolver to use.
+			/**
+			 * 如果 ResourceLoader 不为 null，则根据指定的 ResourceLoader 创建一个 ResourceEntityResolver 对象。
+			 * 如果 ResourceLoader 为 null ，则创建 一个 DelegatingEntityResolver 对象。该 Resolver 委托给默认的 BeansDtdResolver 和 PluggableSchemaResolver 。
+			 */
 			ResourceLoader resourceLoader = getResourceLoader();
 			if (resourceLoader != null) {
 				this.entityResolver = new ResourceEntityResolver(resourceLoader);
 			} else {
 				this.entityResolver = new DelegatingEntityResolver(getBeanClassLoader());
 			}
+			/**
+			 * 上面的方法，一共涉及四个 EntityResolver 的子类：
+			 * 1、org.springframework.beans.factory.xm.BeansDtdResolver ：实现 EntityResolver 接口，Spring Bean dtd 解码器，用来从 classpath 或者 jar 文件中加载 dtd 。部分代码如下：
+			 * private static final String DTD_EXTENSION = ".dtd";
+			 * private static final String DTD_NAME = "spring-beans";
+			 *
+			 * 2、org.springframework.beans.factory.xml.PluggableSchemaResolver ，实现 EntityResolver 接口，读取 classpath 下的所有 "META-INF/spring.schemas" 成一个 namespaceURI 与 Schema 文件地址的 map 。代码如下：
+			 * // 默认 {@link #schemaMappingsLocation} 地址
+			 * public static final String DEFAULT_SCHEMA_MAPPINGS_LOCATION = "META-INF/spring.schemas";
+			 *
+			 * @Nullable
+			 * private final ClassLoader classLoader;
+			 *
+			 * // Schema 文件地址
+			 * private final String schemaMappingsLocation;
+			 * // Stores the mapping of schema URL -> local schema path.
+			 *
+			 * @Nullable
+			 * private volatile Map<String, String> schemaMappings; // namespaceURI 与 Schema 文件地址的映射集合
+			 *
+			 * 3、org.springframework.beans.factory.xml.DelegatingEntityResolver ：实现 EntityResolver 接口，分别代理 dtd 的 BeansDtdResolver 和 xml schemas 的 PluggableSchemaResolver 。代码如下：
+			 * // Suffix for DTD files.
+			 * public static final String DTD_SUFFIX = ".dtd";
+			 *
+			 * // Suffix for schema definition files.
+			 * public static final String XSD_SUFFIX = ".xsd";
+			 *
+			 * private final EntityResolver dtdResolver;
+			 *
+			 * private final EntityResolver schemaResolver;
+			 *
+			 * // 默认
+			 * public DelegatingEntityResolver(@Nullable ClassLoader classLoader) {
+			 *	  this.dtdResolver = new BeansDtdResolver();
+			 *	  this.schemaResolver = new PluggableSchemaResolver(classLoader);
+			 * }
+			 *
+			 * // 自定义
+			 * public DelegatingEntityResolver(EntityResolver dtdResolver, EntityResolver schemaResolver) {
+			 *	  Assert.notNull(dtdResolver, "'dtdResolver' is required");
+			 *	  Assert.notNull(schemaResolver, "'schemaResolver' is required");
+			 *	  this.dtdResolver = dtdResolver;
+			 *	  this.schemaResolver = schemaResolver;
+			 * }
+			 *
+			 * 4、org.springframework.beans.factory.xml.ResourceEntityResolver ：继承自 DelegatingEntityResolver 类，通过 ResourceLoader 来解析实体的引用。代码如下：
+			 * private final ResourceLoader resourceLoader;
+			 *
+			 * public ResourceEntityResolver(ResourceLoader resourceLoader) {
+			 * 	  super(resourceLoader.getClassLoader());
+			 * 	  this.resourceLoader = resourceLoader;
+			 * }
+			 *
+			 *
+			 * EntityResolver 的作用：
+			 * EntityResolver 的作用就是，通过实现它，应用可以自定义如何寻找【验证文件】的逻辑。
+			 *
+			 * 在 loadDocument 方法中涉及一个参数 EntityResolver ，何为EntityResolver？
+			 * 官网这样解释：如果 SAX 应用程序需要实现自定义处理外部实体，则必须实现此接口并使用 setEntityResolver 方法向SAX 驱动器注册一个实例。
+			 * 也就是说，对于解析一个XML，SAX 首先读取该 XML 文档上的声明，根据声明去寻找相应的 DTD 定义，以便对文档进行一个验证。
+			 * 默认的寻找规则，即通过网络（实现上就是声明的DTD的URI地址）来下载相应的DTD声明，并进行认证。
+			 * 下载的过程是一个漫长的过程，而且当网络中断或不可用时，这里会报错，就是因为相应的DTD声明没有被找到的原因。
+			 *
+			 * EntityResolver 的作用是项目本身就可以提供一个如何寻找 DTD 声明的方法，即由程序来实现寻找 DTD 声明的过程，
+			 * 比如我们将 DTD 文件放到项目中某处，在实现时直接将此文档读取并返回给 SAX 即可。这样就避免了通过网络来寻找相应的声明。
+			 *
+			 * 关注 DelegatingEntityResolver#resolveEntity(String publicId, String systemId)
+			 * 关注 BeansDtdResolver#resolveEntity(String publicId, String systemId)
+			 *
+			 *
+			 *
+			 */
 		}
 		return this.entityResolver;
 	}
@@ -421,7 +499,7 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	protected Document doLoadDocument(InputSource inputSource, Resource resource) throws Exception {
 		return this.documentLoader.loadDocument(inputSource, getEntityResolver(), this.errorHandler, getValidationModeForResource(resource), isNamespaceAware());
 		/**
-		 * 调用 DocumentLoader#loadDocument(InputSource inputSource, EntityResolver entityResolver, ErrorHandler errorHandler, int validationMode, boolean namespaceAware) 方法，获取 XML Document 实例。
+		 * 调用 DocumentLoader#loadDocument(InputSource inputSource, EntityResolver entityResolver, ErrorHandler errorHandler, int validationMode, boolean namespaceAware) 方法，获取 XML Document 实例，详细解析见函数体内；
 		 * 该函数的五个参数分别对应：
 		 * inputSource ：加载 Document 的 Resource 源。
 		 * entityResolver ：解析文件的解析器。【重要】详细解析，见函数体内 #getEntityResolver()
@@ -513,17 +591,14 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 			inputStream = resource.getInputStream();
 		} catch (IOException ex) {
 			throw new BeanDefinitionStoreException(
-					"Unable to determine validation mode for [" + resource + "]: cannot open InputStream. " +
-							"Did you attempt to load directly from a SAX InputSource without specifying the " +
-							"validationMode on your XmlBeanDefinitionReader instance?", ex);
+					"Unable to determine validation mode for [" + resource + "]: cannot open InputStream. " + "Did you attempt to load directly from a SAX InputSource without specifying the " + "validationMode on your XmlBeanDefinitionReader instance?", ex);
 		}
 
 		// <x> 获取相应的验证模式
 		try {
 			return this.validationModeDetector.detectValidationMode(inputStream);
 		} catch (IOException ex) {
-			throw new BeanDefinitionStoreException("Unable to determine validation mode for [" +
-					resource + "]: an error occurred whilst reading from the InputStream.", ex);
+			throw new BeanDefinitionStoreException("Unable to determine validation mode for [" + resource + "]: an error occurred whilst reading from the InputStream.", ex);
 		}
 		/**
 		 * 核心在于 <x> 处，调用 XmlValidationModeDetector#detectValidationMode(InputStream inputStream) 方法，获取相应的验证模式。

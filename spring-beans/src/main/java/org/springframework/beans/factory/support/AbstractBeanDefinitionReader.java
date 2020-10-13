@@ -225,7 +225,7 @@ public abstract class AbstractBeanDefinitionReader implements BeanDefinitionRead
 			try {
 				// 获得 Resource 数组，因为 Pattern 模式匹配下，可能有多个 Resource 。例如说，Ant 风格的 location
 				Resource[] resources = ((ResourcePatternResolver) resourceLoader).getResources(location);
-				// 加载 BeanDefinition 们
+				// 加载 BeanDefinition 们，详细见函数体内
 				int count = loadBeanDefinitions(resources);
 				// 添加到 actualResources 中
 				if (actualResources != null) {

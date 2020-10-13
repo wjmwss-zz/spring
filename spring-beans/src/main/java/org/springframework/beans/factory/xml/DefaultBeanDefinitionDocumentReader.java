@@ -92,7 +92,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 	public void registerBeanDefinitions(Document doc, XmlReaderContext readerContext) {
 		this.readerContext = readerContext;
 		// 获得 XML Document Root Element
-		// 执行注册 BeanDefinition
+		// 执行注册 BeanDefinition，具体解析见函数体内
 		doRegisterBeanDefinitions(doc.getDocumentElement());
 	}
 
@@ -152,11 +152,11 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 			}
 		}
 
-		// <3> 解析前处理
+		// <3> 解析前处理（空函数，可扩展）
 		preProcessXml(root);
-		// <4> 解析
+		// <4> 解析（具体见函数体内）
 		parseBeanDefinitions(root, this.delegate);
-		// <5> 解析后处理
+		// <5> 解析后处理（空函数，可扩展）
 		postProcessXml(root);
 
 		// 设置 delegate 回老的 BeanDefinitionParserDelegate 对象
@@ -323,7 +323,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 		// <4> 绝对路径
 		if (absoluteLocation) {
 			try {
-				// 添加配置文件地址的 Resource 到 actualResources 中，并加载相应的 BeanDefinition 们
+				// 添加配置文件地址对应的 Resource 到 actualResources 中，并加载相应的 BeanDefinition 们，详细见函数体内
 				int importCount = getReaderContext().getReader().loadBeanDefinitions(location, actualResources);
 				if (logger.isTraceEnabled()) {
 					logger.trace("Imported " + importCount + " bean definitions from URL location [" + location + "]");

@@ -139,6 +139,8 @@ public class ResourceEntityResolver extends DelegatingEntityResolver {
 		}
 
 		return source;
+		// 首先，调用父类的方法，进行解析。
+		// 如果失败，使用 resourceLoader ，尝试读取 systemId 对应的 Resource 资源。
 	}
 
 }

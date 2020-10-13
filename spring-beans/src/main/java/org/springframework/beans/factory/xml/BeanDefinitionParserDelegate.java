@@ -395,7 +395,7 @@ public class BeanDefinitionParserDelegate {
 			checkNameUniqueness(beanName, aliases, ele);
 		}
 
-		// <4> 解析属性，构造 AbstractBeanDefinition 对象
+		// <4> 解析属性，构造 AbstractBeanDefinition 对象，具体解析见函数体内
 		AbstractBeanDefinition beanDefinition = parseBeanDefinitionElement(ele, beanName, containingBean);
 		if (beanDefinition != null) {
 			// <3.3> beanName ，再次，使用 beanName 生成规则
@@ -514,7 +514,7 @@ public class BeanDefinitionParserDelegate {
 			// 创建用于承载属性的 AbstractBeanDefinition 实例
 			AbstractBeanDefinition bd = createBeanDefinition(className, parent);
 
-			// 解析默认 bean 的各种属性
+			// 解析默认 bean 的各种属性（具体解析见函数体内）
 			parseBeanDefinitionAttributes(ele, beanName, containingBean, bd);
 			// 提取 description
 			bd.setDescription(DomUtils.getChildElementValueByTagName(ele, DESCRIPTION_ELEMENT));

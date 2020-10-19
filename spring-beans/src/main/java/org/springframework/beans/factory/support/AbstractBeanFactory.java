@@ -1359,6 +1359,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * @return a (potentially merged) RootBeanDefinition for the given bean
 	 * @throws NoSuchBeanDefinitionException if there is no bean with the given name
 	 * @throws BeanDefinitionStoreException  in case of an invalid bean definition
+	 *                                       <p>
+	 *                                       将存储 XML 配置文件的 GenericBeanDefinition 转换为 RootBeanDefinition，
+	 *                                       如果指定 BeanName 是子 Bean 的话则会合并父类的相关属性
 	 */
 	protected RootBeanDefinition getMergedLocalBeanDefinition(String beanName) throws BeansException {
 		// Quick check on the concurrent map first, with minimal locking.
@@ -1867,9 +1870,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * @param beanName     the canonical bean name
 	 * @param mbd          the merged bean definition
 	 * @return the object to expose for the bean
-	 *
+	 * <p>
 	 * 通过 bean 实例获取到最终的实例
-	 *
+	 * <p>
 	 * 为从缓存中获取的 bean 是最原始的 Bean ，并不一定是我们最终想要的 Bean 。
 	 * 调用该函数：获取给定 Bean 实例的对象，该对象要么是 bean 实例本身，要么就是 FactoryBean 创建的 Bean 对象。
 	 */
@@ -1895,7 +1898,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		// If it's a FactoryBean, we use it to create a bean instance, unless the
 		// caller actually wants a reference to the factory.
 		// 到这里我们就有了一个 Bean 实例，当然该实例可能是会是是一个正常的 bean 又或者是一个 FactoryBean
-		// 如果是 FactoryBean，我我们则创建该 Bean
+		// <2> 如果是 FactoryBean ，用来创建 Bean 实例，如果不是 FactoryBean，直接返回 Bean
 		if (!(beanInstance instanceof FactoryBean)) {
 			return beanInstance;
 		}
@@ -1912,19 +1915,28 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			// Return bean instance from factory.
 			FactoryBean<?> factory = (FactoryBean<?>) beanInstance;
 			// Caches object obtained from FactoryBean if it is a singleton.
-			// containsBeanDefinition 检测 beanDefinitionMap 中也就是在所有已经加载的类中
-			// 检测是否定义 beanName
+			// containsBeanDefinition： 检测 beanDefinitionMap 中是否有 beanName 对应的 bean
 			if (mbd == null && containsBeanDefinition(beanName)) {
-				// 将存储 XML 配置文件的 GenericBeanDefinition 转换为 RootBeanDefinition，
-				// 如果指定 BeanName 是子 Bean 的话同时会合并父类的相关属性
+				// 将存储 XML 配置文件的 GenericBeanDefinition 转换为 RootBeanDefinition，如果指定 BeanName 是子 Bean 的话则会合并父类的相关属性
 				mbd = getMergedLocalBeanDefinition(beanName);
 			}
 			// 是否是用户定义的，而不是应用程序本身定义的
 			boolean synthetic = (mbd != null && mbd.isSynthetic());
-			// 核心处理方法，使用 FactoryBean 获得 Bean 对象
+			// 核心处理方法，使用 FactoryBean 获得 Bean 对象，具体见函数体内
 			object = getObjectFromFactoryBean(factory, beanName, !synthetic);
 		}
 		return object;
+		/**
+		 * 该方法主要是进行检测工作的，主要如下：
+		 *
+		 * <1> 处，若 name 为工厂相关的（以 & 开头），且 beanInstance 为 NullBean 类型则直接返回，如果 beanInstance 不为 FactoryBean 类型则抛出 BeanIsNotAFactoryException 异常。这里主要是校验 beanInstance 的正确性。
+		 * <2> 处，如果 beanInstance 不为 FactoryBean 类型或者 name 也不是与工厂相关的，则直接返回 beanInstance 这个 Bean 对象。这里主要是对非 FactoryBean 类型处理。
+		 * <3> 处，如果 BeanDefinition 为空，则从 factoryBeanObjectCache 中加载 Bean 对象。如果还是空，则可以断定 beanInstance 一定是 FactoryBean 类型，则委托 #getObjectFromFactoryBean(FactoryBean<?> factory, String beanName, boolean shouldPostProcess) 方法，进行处理，使用 FactoryBean 获得 Bean 对象。
+		 *
+		 * 总结该方法，分为两种情况
+		 * 第一种，当该实例对象为非 FactoryBean 类型，直接返回给定的 Bean 实例对象 beanInstance 。
+		 * 第二种，当该实例对象为FactoryBean 类型，从 FactoryBean ( beanInstance ) 中，获取 Bean 实例对象。
+		 */
 	}
 
 	/**
@@ -2008,6 +2020,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * @return if this bean factory contains a bean definition with the given name
 	 * @see #containsBean
 	 * @see org.springframework.beans.factory.ListableBeanFactory#containsBeanDefinition
+	 * <p>
+	 * 检测 beanDefinitionMap 中是否有 beanName 对应的 bean
 	 */
 	protected abstract boolean containsBeanDefinition(String beanName);
 

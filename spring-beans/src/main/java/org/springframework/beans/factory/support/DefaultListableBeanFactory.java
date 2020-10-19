@@ -952,6 +952,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	/**
 	 * BeanDefinition 的注册，由接口 org.springframework.beans.factory.support.BeanDefinitionRegistry 定义。
 	 * 调用 BeanDefinitionRegistry 的 #registerBeanDefinition(String beanName, BeanDefinition beanDefinition) 方法，实现通过 beanName 注册 BeanDefinition 。
+	 * 注册，就是把解析好的BeanDefinition放进一个 HashMap 容器中，IoC 容器就是通过这个 HashMap 来维护这些 BeanDefinition 的
 	 *
 	 * @param beanName       the name of the bean instance to register
 	 * @param beanDefinition definition of the bean instance to register

@@ -47,11 +47,6 @@ public class SimpleAliasRegistry implements AliasRegistry {
 	protected final Log logger = LogFactory.getLog(getClass());
 
 	/**
-	 * Map from alias to canonical name.
-	 */
-	private final Map<String, String> aliasMap = new ConcurrentHashMap<>(16);
-
-	/**
 	 * 注册 alias 和 beanName 的映射
 	 *
 	 * @param name  the canonical name
@@ -221,15 +216,25 @@ public class SimpleAliasRegistry implements AliasRegistry {
 	}
 
 	/**
+	 * Map from alias to canonical name.
+	 * key: alias，对应<alias name="multiAliased" alias="alias4"/>的alias属性
+	 * value: beanName，对应<alias name="multiAliased" alias="alias4"/>的name属性
+	 */
+	private final Map<String, String> aliasMap = new ConcurrentHashMap<>(16);
+
+	/**
 	 * Determine the raw name, resolving aliases to canonical names.
 	 *
 	 * @param name the user-specified name
 	 * @return the transformed name
+	 * <p>
+	 * 取指定 alias 所表示的最终 beanName
 	 */
 	public String canonicalName(String name) {
 		String canonicalName = name;
 		// Handle aliasing...
 		String resolvedName;
+		// 循环，从 aliasMap 中，获取到最终的 beanName
 		do {
 			resolvedName = this.aliasMap.get(canonicalName);
 			if (resolvedName != null) {
@@ -238,6 +243,10 @@ public class SimpleAliasRegistry implements AliasRegistry {
 		}
 		while (resolvedName != null);
 		return canonicalName;
+		/**
+		 * 主要是一个循环获取 beanName 的过程；
+		 * 例如，别名 A 指向名称为 B 的 bean 则返回 B，若 别名 A 指向别名 B，别名 B 指向名称为 C 的 bean，则返回 C。
+		 */
 	}
 
 }

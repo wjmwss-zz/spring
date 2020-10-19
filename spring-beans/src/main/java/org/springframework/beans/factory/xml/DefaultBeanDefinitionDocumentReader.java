@@ -434,7 +434,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 	 * 1、在解析过程中，首先调用 BeanDefinitionParserDelegate#parseBeanDefinitionElement(Element ele) 方法，完成基本属性、默认标签的解析。
 	 * 基本属性、
 	 * 默认标签：<meta>、<lookup-method>、<replace-method>、<constructor-arg>、<property>、<qualifier>
-	 * 2、如果解析成功（返回的 bdHolder != null ），完成自定义标签元素的解析，调用 BeanDefinitionParserDelegate#decorateBeanDefinitionIfRequired(Element ele, BeanDefinitionHolder definitionHolder) 方法；
+	 * 2、如果解析成功（返回的 bdHolder != null ），调用 BeanDefinitionParserDelegate#decorateBeanDefinitionIfRequired(Element ele, BeanDefinitionHolder definitionHolder) 方法，完成自定义标签元素的解析；
 	 */
 	protected void processBeanDefinition(Element ele, BeanDefinitionParserDelegate delegate) {
 		// 进行 bean 元素解析。
@@ -446,7 +446,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 			bdHolder = delegate.decorateBeanDefinitionIfRequired(ele, bdHolder);
 			try {
 				// Register the final decorated instance.
-				// <3> 进行 BeanDefinition 的注册
+				// <3> 进行 BeanDefinition 的注册（注册，就是把解析好的BeanDefinition放进一个 HashMap 容器中，IoC 容器就是通过这个 HashMap 来维护这些 BeanDefinition 的）
 				BeanDefinitionReaderUtils.registerBeanDefinition(bdHolder, getReaderContext().getRegistry());
 			} catch (BeanDefinitionStoreException ex) {
 				getReaderContext().error("Failed to register bean definition with name '" + bdHolder.getBeanName() + "'", ele, ex);

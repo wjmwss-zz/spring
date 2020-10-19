@@ -381,7 +381,7 @@ public class BeanDefinitionParserDelegate {
 
 		// <3.1> beanName ，优先，使用 id
 		String beanName = id;
-		// <3.2> beanName ，其次，使用 aliases 的第一个
+		// <3.2> beanName为空， 别名不为空，则使用 aliases 的第一个
 		if (!StringUtils.hasText(beanName) && !aliases.isEmpty()) {
 			// 移除出别名集合
 			beanName = aliases.remove(0);
@@ -398,11 +398,12 @@ public class BeanDefinitionParserDelegate {
 		// <4> 解析属性，构造 AbstractBeanDefinition 对象，具体解析见函数体内
 		AbstractBeanDefinition beanDefinition = parseBeanDefinitionElement(ele, beanName, containingBean);
 		if (beanDefinition != null) {
-			// <3.3> beanName ，再次，使用 beanName 生成规则
+			// <3.3> beanName是空 ，再次，使用 beanName 生成规则
+			// （如果 bean 基本属性不包含id，只有 name，则取第一个 name 作为 BeanDefinitionHolder 的 beanName）
 			if (!StringUtils.hasText(beanName)) {
 				try {
 					if (containingBean != null) {
-						// <3.3> 生成唯一的 beanName
+						// <3.3> 生成唯一的 beanName，如："org.springframework.beans.testfixture.beans.TestBean#0"
 						beanName = BeanDefinitionReaderUtils.generateBeanName(beanDefinition, this.readerContext.getRegistry(), true);
 					} else {
 						// <3.3> 生成唯一的 beanName
@@ -511,10 +512,10 @@ public class BeanDefinitionParserDelegate {
 		}
 
 		try {
-			// 创建用于承载属性的 AbstractBeanDefinition 实例
+			// 创建用于承载属性的 AbstractBeanDefinition 实例，具体见函数体内
 			AbstractBeanDefinition bd = createBeanDefinition(className, parent);
 
-			// 解析默认 bean 的各种属性（具体解析见函数体内）
+			// 解析默认 bean 的各种标签属性（比如name、autowire、lazy-init、parent、scope等的标签属性）（具体解析见函数体内）
 			parseBeanDefinitionAttributes(ele, beanName, containingBean, bd);
 			// 提取 description
 			bd.setDescription(DomUtils.getChildElementValueByTagName(ele, DESCRIPTION_ELEMENT));
@@ -522,7 +523,7 @@ public class BeanDefinitionParserDelegate {
 			// tips：
 			// 下面的一堆是解析 <bean>......</bean> 内部的子元素，
 			// 解析出来以后的信息都放到 BeanDefinition 的属性中，并且仅仅只是标记作用，在真正实例化bean的时候才会具体实现；
-			// <bean>......</bean> 内部的默认标签有：<meta>、<lookup-method>、<replace-method>、<constructor-arg>、<property>、<qualifier>
+			// <bean>......</bean> 内部的默认标签（子标签属性）有：<meta>、<lookup-method>、<replace-method>、<constructor-arg>、<property>、<qualifier>
 			// 还存在自定义的标签，将会在解释完默认标签后说；
 
 			/**
@@ -569,6 +570,21 @@ public class BeanDefinitionParserDelegate {
 		/**
 		 * 到这里，bean 标签的所有属性我们都可以看到其解析的过程，也就说到这里我们已经解析一个基本可用的 BeanDefinition 。
 		 */
+	}
+
+	/**
+	 * Create a bean definition for the given class name and parent name.
+	 *
+	 * @param className  the name of the bean class
+	 * @param parentName the name of the bean's parent bean
+	 * @return the newly created bean definition
+	 * @throws ClassNotFoundException if bean class resolution was attempted but failed
+	 *                                <p>
+	 *                                创建 AbstractBeanDefinition 对象，委托 BeanDefinitionReaderUtils 创建
+	 *                                完成解析后，返回的是一个已经完成对 <bean> 标签解析的 BeanDefinition 实例
+	 */
+	protected AbstractBeanDefinition createBeanDefinition(@Nullable String className, @Nullable String parentName) throws ClassNotFoundException {
+		return BeanDefinitionReaderUtils.createBeanDefinition(parentName, className, this.readerContext.getBeanClassLoader());
 	}
 
 	/**
@@ -652,20 +668,6 @@ public class BeanDefinitionParserDelegate {
 	}
 
 	/**
-	 * Create a bean definition for the given class name and parent name.
-	 *
-	 * @param className  the name of the bean class
-	 * @param parentName the name of the bean's parent bean
-	 * @return the newly created bean definition
-	 * @throws ClassNotFoundException if bean class resolution was attempted but failed
-	 *                                <p>
-	 *                                创建 AbstractBeanDefinition 对象。
-	 */
-	protected AbstractBeanDefinition createBeanDefinition(@Nullable String className, @Nullable String parentName) throws ClassNotFoundException {
-		return BeanDefinitionReaderUtils.createBeanDefinition(parentName, className, this.readerContext.getBeanClassLoader());
-	}
-
-	/**
 	 * Parse the meta elements underneath the given element, if any.
 	 * <p>
 	 * meta: 元数据。当需要使用里面的信息时可以通过 key 获取。
@@ -700,6 +702,8 @@ public class BeanDefinitionParserDelegate {
 		 * 友情提示：
 		 * AbstractBeanDefinition 继承 BeanMetadataAttributeAccessor 类
 		 * BeanMetadataAttributeAccessor 继承 AttributeAccessorSupport 类。
+		 * org.springframework.core.AttributeAccessorSupport ，是接口 AttributeAccessor 的实现者。
+		 * AttributeAccessor 接口定义了与其他对象的元数据进行连接和访问的约定，可以通过该接口对属性进行获取、设置、删除操作。
 		 */
 	}
 
@@ -1622,6 +1626,11 @@ public class BeanDefinitionParserDelegate {
 		// Decorate based on custom attributes first.
 		// <1> 遍历属性，查看是否有适用于装饰的【属性】
 		NamedNodeMap attributes = ele.getAttributes();
+		// 一个NamedNodeMap的属性例子
+		// 0 = {DeferredAttrImpl@3379} "autowire="default""
+		// 1 = {DeferredAttrImpl@3388} "class="org.springframework.beans.testfixture.beans.TestBean""
+		// 2 = {DeferredAttrImpl@3389} "id="validEmptyWithDescription""
+		// 3 = {DeferredAttrImpl@3390} "lazy-init="default""
 		for (int i = 0; i < attributes.getLength(); i++) {
 			Node node = attributes.item(i);
 			finalDefinition = decorateIfRequired(node, finalDefinition, containingBd);

@@ -44,8 +44,8 @@ public abstract class BeanDefinitionReaderUtils {
 	public static final String GENERATED_BEAN_NAME_SEPARATOR = BeanFactoryUtils.GENERATED_BEAN_NAME_SEPARATOR;
 
 	/**
-	 * Create a new GenericBeanDefinition for the given parent name and class name,
-	 * eagerly loading the bean class if a ClassLoader has been specified.
+	 * Create a new GenericBeanDefinition for the given parent name and class name, （Generic：泛型）
+	 * eagerly loading the bean class if a ClassLoader has been specified.（如果更早加载的bean是一个ClassLoader的话将会被指定）
 	 *
 	 * @param parentName  the name of the parent bean, if any
 	 * @param className   the name of the bean class, if any
@@ -54,8 +54,7 @@ public abstract class BeanDefinitionReaderUtils {
 	 * @return the bean definition
 	 * @throws ClassNotFoundException if the bean class could not be loaded
 	 *                                <p>
-	 *                                创建 AbstractBeanDefinition 对象，委托 BeanDefinitionReaderUtils 创建
-	 *                                完成解析后，返回的是一个已经完成对 <bean> 标签解析的 BeanDefinition 实例
+	 *                                创建 AbstractBeanDefinition 对象。
 	 */
 	public static AbstractBeanDefinition createBeanDefinition(@Nullable String parentName, @Nullable String className, @Nullable ClassLoader classLoader) throws ClassNotFoundException {
 		// 创建 GenericBeanDefinition 对象
@@ -167,6 +166,7 @@ public abstract class BeanDefinitionReaderUtils {
 	 *                                      <p>
 	 *                                      BeanDefinitionReaderUtils的registerBeanDefinition函数：注册 BeanDefinition
 	 *                                      这一步结束，BeanDefinition 基于 beanName 和 alias 的维度，都已经注入到缓存中，下一步则是等待初始化使用了
+	 *                                      注册，就是把解析好的BeanDefinition放进一个 HashMap 容器中，IoC 容器就是通过这个 HashMap 来维护这些 BeanDefinition 的
 	 */
 	public static void registerBeanDefinition(BeanDefinitionHolder definitionHolder, BeanDefinitionRegistry registry) throws BeanDefinitionStoreException {
 		// Register bean definition under primary name.

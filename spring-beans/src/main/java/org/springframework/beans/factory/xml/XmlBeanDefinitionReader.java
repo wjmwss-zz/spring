@@ -619,14 +619,8 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	 * @see #loadBeanDefinitions
 	 * @see #setDocumentReaderClass
 	 * @see BeanDefinitionDocumentReader#registerBeanDefinitions
-	 */
-	/**
+	 * <p>
 	 * IoC 之注册 BeanDefinitions：XML Document => Bean Definition
-	 *
-	 * @param doc
-	 * @param resource
-	 * @return
-	 * @throws BeanDefinitionStoreException
 	 */
 	public int registerBeanDefinitions(Document doc, Resource resource) throws BeanDefinitionStoreException {
 		// <1> 创建 BeanDefinitionDocumentReader 对象

@@ -65,9 +65,7 @@ public class XmlBeanDefinitionReaderTests {
 	}
 
 	/**
-	 * 解析 XML 配置文件成对应的 BeanDefinition 们的流程
-	 * #withFreshInputStream() 和 #withImport()
-	 * 相比来说，后者比前者多了一个 <import /> 标签的解析。当然，XmlBeanDefinitionReaderTests 类中，其它方法也可以简单调试下
+	 * XML Resource => XML Document => Bean Definition 测试用例
 	 */
 	@Test
 	public void withImport() {

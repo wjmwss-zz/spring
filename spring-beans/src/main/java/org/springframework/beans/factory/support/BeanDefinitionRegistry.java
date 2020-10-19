@@ -61,6 +61,7 @@ public interface BeanDefinitionRegistry extends AliasRegistry {
 	 * @see ChildBeanDefinition
 	 * <p>
 	 * 注册
+	 * 注册，就是把解析好的BeanDefinition放进一个 HashMap 容器中，IoC 容器就是通过这个 HashMap 来维护这些 BeanDefinition 的
 	 */
 	void registerBeanDefinition(String beanName, BeanDefinition beanDefinition) throws BeanDefinitionStoreException;
 

@@ -84,7 +84,7 @@
 		<property name="initMethodDeclared"><value>true</value></property>
 	</bean>
 
-	<!-- Factory beans are automatically treated differently -->
+	<!-- Factory beans are automatically treated differently 自动标记 Factory beans -->
 	<bean id="singletonFactory"	class="org.springframework.beans.testfixture.beans.factory.DummyFactory">
 	</bean>
 
@@ -92,12 +92,12 @@
 		<property name="singleton"><value>false</value></property>
 	</bean>
 
-	<!-- Check that the circular reference resolution mechanism doesn't break
-	     repeated references to the same FactoryBean -->
+	<!-- Check that the circular reference resolution mechanism doesn't break repeated references to the same FactoryBean -->
+	<!-- 检查循环引用解析机制是否不会破坏对同一 FactoryBean 的重复引用 -->
 	<bean id="factoryReferencer" class="org.springframework.beans.factory.xml.DummyReferencer">
 		<property name="testBean1"><ref bean="singletonFactory"/></property>
 		<property name="testBean2"><ref bean="singletonFactory"/></property>
-		<property name="dummyFactory"><ref bean="&amp;singletonFactory"/></property>
+		<property name="dummyFactory"><ref bean="singletonFactory"/></property>
 	</bean>
 
 	<bean id="factoryReferencerWithConstructor" class="org.springframework.beans.factory.xml.DummyReferencer">
@@ -106,8 +106,8 @@
 		<property name="testBean2"><ref bean="singletonFactory"/></property>
 	</bean>
 
-	<!-- Check that the circular reference resolution mechanism doesn't break
-	     prototype instantiation -->
+	<!-- Check that the circular reference resolution mechanism doesn't break prototype instantiation -->
+	<!-- 检查循环引用解析机制是否不会破坏对同一 FactoryBean 的重复引用（原型模式） -->
 	<bean id="prototypeReferencer" class="org.springframework.beans.factory.xml.DummyReferencer" scope="prototype">
 		<property name="testBean1"><ref bean="kathy"/></property>
 		<property name="testBean2"><ref bean="kathy"/></property>

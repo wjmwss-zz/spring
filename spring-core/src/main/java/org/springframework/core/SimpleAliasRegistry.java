@@ -217,8 +217,8 @@ public class SimpleAliasRegistry implements AliasRegistry {
 
 	/**
 	 * Map from alias to canonical name.
-	 * key: alias，对应<alias name="multiAliased" alias="alias4"/>的alias属性
-	 * value: beanName，对应<alias name="multiAliased" alias="alias4"/>的name属性
+	 * key: alias，对应<alias name="multiAliased" alias="alias4"/>的name属性
+	 * value: beanName，对应<alias name="multiAliased" alias="alias4"/>的alias属性
 	 */
 	private final Map<String, String> aliasMap = new ConcurrentHashMap<>(16);
 

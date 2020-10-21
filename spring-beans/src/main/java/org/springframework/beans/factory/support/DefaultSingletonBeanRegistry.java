@@ -196,7 +196,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 */
 	@Nullable
 	protected Object getSingleton(String beanName, boolean allowEarlyReference) {
-		// 从单例缓冲中加载 bean
+		// 从单例缓存中加载 bean
 		Object singletonObject = this.singletonObjects.get(beanName);
 		// 缓存中的 bean 为空，且当前 bean 正在创建，具体解析见函数体内
 		if (singletonObject == null && isSingletonCurrentlyInCreation(beanName)) {
@@ -249,7 +249,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 		 * // Cache of early singleton objects: bean name to bean instance.
 		 * // 存放的是早期的 bean，对应关系也是 bean name --> bean instance。
 		 * // 它与 {@link #singletonObjects} 区别在于 earlySingletonObjects 中存放的 bean 不一定是完整。
-		 * // 从 {@link #getSingleton(String)} 方法中，我们可以了解，bean 在创建过程中就已经加入到 earlySingletonObjects 中了。
+		 * // 从 {@link #getSingleton(String)} 方法中，我们可以了解，bean 在创建过程中就已经加入到 earlySingletonObjects 中了。（前提是字段 allowEarlyReference是否允许提前创建 为真）
 		 * // 所以当在 bean 的创建过程中，就可以通过 getBean() 方法获取。这个 Map 也是【循环依赖】的关键所在。（想象这个方法被并行）
 		 * private final Map<String, Object> earlySingletonObjects = new HashMap<>(16);
 		 */
@@ -388,7 +388,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	/**
 	 * Names of beans that are currently in creation.
 	 * 正在创建中的单例 Bean 的名字的集合;
-	 * 从这段代码中，我们可以预测，在 Bean 创建过程中都会将其加入到 singletonsCurrentlyInCreation 集合中。具体是在什么时候加的，我们后面分析。
+	 * 从这段代码中，我们可以了解到，在 Bean 创建过程中都会将其加入到 singletonsCurrentlyInCreation 集合中。
 	 */
 	private final Set<String> singletonsCurrentlyInCreation = Collections.newSetFromMap(new ConcurrentHashMap<>(16));
 
@@ -397,6 +397,11 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 * (within the entire factory).
 	 * <p>
 	 * 判断 beanName 对应的 Bean 是否在创建过程中，这个过程是说整个工厂中；
+	 * 从这段代码中，我们可以预测，在 Bean 创建过程中都会将其加入到 singletonsCurrentlyInCreation 集合中。
+	 * <p>
+	 * 具体是什么时候添加的标记：
+	 * 在调用 #beforeSingletonCreation(String beanName) 方法，用于添加标志，当前 bean 正处于创建中
+	 * 在调用 #afterSingletonCreation(String beanName) 方法，用于移除标记，当前 Bean 不处于创建中。
 	 *
 	 * @param beanName the name of the bean
 	 */
@@ -410,8 +415,11 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 *
 	 * @param beanName the name of the singleton about to be created
 	 * @see #isSingletonCurrentlyInCreation
+	 * <p>
+	 * 用于添加标志，表示当前 bean 正处于创建中
 	 */
 	protected void beforeSingletonCreation(String beanName) {
+		// 添加标志，如果添加失败，抛出异常
 		if (!this.inCreationCheckExclusions.contains(beanName) && !this.singletonsCurrentlyInCreation.add(beanName)) {
 			throw new BeanCurrentlyInCreationException(beanName);
 		}
@@ -423,8 +431,11 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 *
 	 * @param beanName the name of the singleton that has been created
 	 * @see #isSingletonCurrentlyInCreation
+	 * <p>
+	 * 用于移除标记，表示当前 Bean 不处于创建中
 	 */
 	protected void afterSingletonCreation(String beanName) {
+		// remove标志，如果remove失败，抛出异常
 		if (!this.inCreationCheckExclusions.contains(beanName) && !this.singletonsCurrentlyInCreation.remove(beanName)) {
 			throw new IllegalStateException("Singleton '" + beanName + "' isn't currently in creation");
 		}
@@ -697,6 +708,9 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 * any sort of extended singleton creation phase. In particular, subclasses
 	 * should <i>not</i> have their own mutexes involved in singleton creation,
 	 * to avoid the potential for deadlocks in lazy-init situations.
+	 * <p>
+	 * 首先，获取锁。其实我们在前面篇幅中发现了大量的同步锁，锁住的对象都是 this.singletonObjects，主要是因为在单例模式中必须要保证全局唯一。
+	 * 这里可以理解到，并发什么对象，就锁什么对象
 	 */
 	@Override
 	public final Object getSingletonMutex() {

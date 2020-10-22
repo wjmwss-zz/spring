@@ -16,16 +16,15 @@
 
 package org.springframework.context.support;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.beans.factory.config.Scope;
 import org.springframework.core.NamedThreadLocal;
 import org.springframework.lang.Nullable;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A simple thread-backed {@link Scope} implementation.
@@ -48,8 +47,8 @@ import org.springframework.lang.Nullable;
  *
  * @author Arjen Poutsma
  * @author Juergen Hoeller
- * @since 3.0
  * @see org.springframework.web.context.request.RequestScope
+ * @since 3.0
  */
 public class SimpleThreadScope implements Scope {
 
@@ -63,11 +62,21 @@ public class SimpleThreadScope implements Scope {
 				}
 			};
 
-
+	/**
+	 * 从 scope 中获取 bean
+	 *
+	 * @param name          the name of the object to retrieve
+	 * @param objectFactory the {@link ObjectFactory} to use to create the scoped
+	 *                      object if it is not present in the underlying storage mechanism
+	 * @return
+	 */
 	@Override
 	public Object get(String name, ObjectFactory<?> objectFactory) {
+		// 获取 scope 缓存
 		Map<String, Object> scope = this.threadScope.get();
+		// 加入缓存
 		return scope.computeIfAbsent(name, k -> objectFactory.getObject());
+		// org.springframework.beans.factory.config.Scope 接口，有多种实现类。其他的 Scope 实现类，感兴趣的胖友，可以单独去看
 	}
 
 	@Override

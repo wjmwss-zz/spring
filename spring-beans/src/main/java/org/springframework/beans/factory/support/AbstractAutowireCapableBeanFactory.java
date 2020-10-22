@@ -121,12 +121,6 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	private final Set<Class<?>> ignoredDependencyInterfaces = new HashSet<>();
 
 	/**
-	 * The name of the currently created bean, for implicit dependency registration
-	 * on getBean etc invocations triggered from a user-specified Supplier callback.
-	 */
-	private final NamedThreadLocal<String> currentlyCreatedBean = new NamedThreadLocal<>("Currently created bean");
-
-	/**
 	 * Cache of unfinished FactoryBean instances: FactoryBean name to BeanWrapper.
 	 */
 	private final ConcurrentMap<String, BeanWrapper> factoryBeanInstanceCache = new ConcurrentHashMap<>();
@@ -464,8 +458,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * args ：用于构造函数或者工厂方法创建 Bean 实例对象的参数。
 	 */
 	@Override
-	protected Object createBean(String beanName, RootBeanDefinition mbd, @Nullable Object[] args)
-			throws BeanCreationException {
+	protected Object createBean(String beanName, RootBeanDefinition mbd, @Nullable Object[] args) throws BeanCreationException {
 
 		if (logger.isTraceEnabled()) {
 			logger.trace("Creating instance of bean '" + beanName + "'");
@@ -477,7 +470,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// which cannot be stored in the shared merged bean definition.
 		// <1> 解析指定 BeanDefinition 的 class 属性，确保此时的 bean 已经被解析了，具体解析见函数体内
 		// 主要是解析 bean definition 的 class 类，并将已经解析的 Class 存储在 bean definition 中以供后面使用。
-		// 如果解析的 class 不为空，则会将该 BeanDefinition 进行设置到 mbdToUse 中。这样做的主要目的是，以为动态解析的 class 是无法保存到共享的 BeanDefinition 中。
+		// 如果解析的 class 不为空，则会将该 BeanDefinition 进行设置到 mbdToUse 中。这样做的主要目的是，因为动态解析的 class 无法保存到共享的 BeanDefinition 中。
 		Class<?> resolvedClass = resolveBeanClass(mbd, beanName);
 		if (resolvedClass != null && !mbd.hasBeanClass() && mbd.getBeanClassName() != null) {
 			mbdToUse = new RootBeanDefinition(mbd);
@@ -1166,18 +1159,56 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Make sure bean class is actually resolved at this point.
 		// 解析 bean ，将 bean 类名解析为 class 引用。
 		Class<?> beanClass = resolveBeanClass(mbd, beanName);
-
 		if (beanClass != null && !Modifier.isPublic(beanClass.getModifiers()) && !mbd.isNonPublicAccessAllowed()) {
 			throw new BeanCreationException(mbd.getResourceDescription(), beanName, "Bean class isn't public, and non-public access not allowed: " + beanClass.getName());
 		}
 
-		// <1> 如果存在 Supplier 回调，则使用给定的回调方法初始化策略
+		/**
+		 * <1> 如果存在 Supplier 回调，则使用给定的回调方法初始化策略
+		 * 首先,从 BeanDefinition 中获取 Supplier 对象。如果不为空，则调用 #obtainFromSupplier(final String beanName, final RootBeanDefinition mbd) 方法，
+		 *
+		 * 先看下java8内置的函数式接口
+		 * >* 四大核心函数式接口：
+		 * >   * Consumer<T>    : 消费型接口（无返回值，有去无回）void accept(T t);
+		 * >   * Supplier<T>    : 供给型接口 T get();
+		 * >   * Function<T, R> : 函数型接口 R apply(T t);
+		 * >   * Predicate<T>   : 断言型接口 boolean test(T t);
+		 * >* 对应的增强型：
+		 * >   * BiConsumer<T>    : 消费型接口（无返回值，有去无回）void accept(T t, U u);
+		 * >   * BiFunction<T, R> : 函数型接口 R apply(T t, U u);
+		 * >   * BiPredicate<T>   : 断言型接口 boolean test(T t, U u);
+		 *
+		 * Supplier 接口仅有一个功能性的 #get() 方法，该方法会返回一个 <T> 类型的对象，有点儿类似工厂方法。
+		 * 这个接口有什么作用？用于指定创建 bean 的回调。如果我们设置了这样的回调，那么其他的构造器或者工厂方法都会没有用。
+		 * 在什么设置该 Supplier 参数呢？Spring 提供了相应的 setter 方法，如下：
+		 * // AbstractBeanDefinition.java
+		 * // 创建 Bean 的 Supplier 对象
+		 * @Nullable
+		 * private Supplier<?> instanceSupplier;
+		 *
+		 * public void setInstanceSupplier (@Nullable Supplier < ? > instanceSupplier){
+		 *	  this.instanceSupplier = instanceSupplier;
+		 * }
+		 *
+		 * 在构造 BeanDefinition 对象的时候，设置了 instanceSupplier 该值，代码如下（以 RootBeanDefinition 为例）：
+		 * // RootBeanDefinition.java
+		 * public <T> RootBeanDefinition(@Nullable Class<T> beanClass, String scope, @Nullable Supplier<T> instanceSupplier) {
+		 * 	super();
+		 * 	setBeanClass(beanClass);
+		 * 	setScope(scope);
+		 * 	// 设置 instanceSupplier 属性
+		 * 	setInstanceSupplier(instanceSupplier);
+		 * }
+		 *
+		 * 如果设置了 instanceSupplier 属性，则可以调用 #obtainFromSupplier(Supplier<?> instanceSupplier, String beanName) 方法，完成 Bean 的初始化。
+		 * 具体解析见函数体内
+		 */
 		Supplier<?> instanceSupplier = mbd.getInstanceSupplier();
 		if (instanceSupplier != null) {
 			return obtainFromSupplier(instanceSupplier, beanName);
 		}
 
-		// <2> 如果是工厂，则使用 FactoryBean 的 factory-method 来创建，支持静态工厂和实例工厂
+		// <2> 如果是工厂，则使用 FactoryBean 的 factory-method 来创建，支持静态工厂和实例工厂，具体解析见函数体内
 		if (mbd.getFactoryMethodName() != null) {
 			return instantiateUsingFactoryMethod(beanName, mbd, args);
 		}
@@ -1232,6 +1263,14 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	}
 
 	/**
+	 * The name of the currently created bean, for implicit dependency registration
+	 * on getBean etc invocations triggered from a user-specified Supplier callback.
+	 * <p>
+	 * 当前线程，正在创建的 Bean 对象的名字
+	 */
+	private final NamedThreadLocal<String> currentlyCreatedBean = new NamedThreadLocal<>("Currently created bean");
+
+	/**
 	 * Obtain a bean instance from the given supplier.
 	 *
 	 * @param instanceSupplier the configured supplier
@@ -1239,15 +1278,20 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * @return a BeanWrapper for the new instance
 	 * @see #getObjectForBeanInstance
 	 * @since 5.0
+	 * <p>
+	 * 对设置了instanceSupplier的BeanDefinition进行初始化
 	 */
 	protected BeanWrapper obtainFromSupplier(Supplier<?> instanceSupplier, String beanName) {
 		Object instance;
-
+		// 获得原创建的 Bean 的对象名
 		String outerBean = this.currentlyCreatedBean.get();
+		// 设置新的 Bean 的对象名，到 currentlyCreatedBean 中
 		this.currentlyCreatedBean.set(beanName);
 		try {
+			// <1> 调用 Supplier 的 get()，返回一个 Bean 对象
 			instance = instanceSupplier.get();
 		} finally {
+			// 设置原创建的 Bean 的对象名，到 currentlyCreatedBean 中
 			if (outerBean != null) {
 				this.currentlyCreatedBean.set(outerBean);
 			} else {
@@ -1255,12 +1299,16 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			}
 		}
 
+		// 未创建 Bean 对象，则创建 NullBean 对象
 		if (instance == null) {
 			instance = new NullBean();
 		}
+		// <2> 然后，根据 instance 构造一个 BeanWrapper 对象 bw
 		BeanWrapper bw = new BeanWrapperImpl(instance);
+		// <3> 初始化 BeanWrapper 对象
 		initBeanWrapper(bw);
 		return bw;
+		// 有关于 BeanWrapper ，后面再详细讲解
 	}
 
 	/**
@@ -1345,10 +1393,12 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 *                     or {@code null} if none (-> use constructor argument values from bean definition)
 	 * @return a BeanWrapper for the new instance
 	 * @see #getBean(String, Object[])
+	 * <p>
+	 * 如果mbd是工厂，使用该方法完成 bean 的初始化工作
 	 */
-	protected BeanWrapper instantiateUsingFactoryMethod(
-			String beanName, RootBeanDefinition mbd, @Nullable Object[] explicitArgs) {
-
+	protected BeanWrapper instantiateUsingFactoryMethod(String beanName, RootBeanDefinition mbd, @Nullable Object[] explicitArgs) {
+		// 构造一个 ConstructorResolver 对象，然后调用其 #instantiateUsingFactoryMethod(EvaluationContext context, String typeName, List<TypeDescriptor> argumentTypes) 方法。
+		// org.springframework.expression.ConstructorResolver 是构造方法或者工厂类初始化 bean 的委托类，具体解析见函数体内
 		return new ConstructorResolver(this).instantiateUsingFactoryMethod(beanName, mbd, explicitArgs);
 	}
 

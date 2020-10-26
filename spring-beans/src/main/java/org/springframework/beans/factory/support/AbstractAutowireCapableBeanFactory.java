@@ -1183,7 +1183,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		 * 在什么设置该 Supplier 参数呢？Spring 提供了相应的 setter 方法，如下：
 		 * // AbstractBeanDefinition.java
 		 * // 创建 Bean 的 Supplier 对象
-		 * @Nullable
+		 * \@Nullable
 		 * private Supplier<?> instanceSupplier;
 		 *
 		 * public void setInstanceSupplier (@Nullable Supplier < ? > instanceSupplier){
@@ -1193,11 +1193,11 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		 * 在构造 BeanDefinition 对象的时候，设置了 instanceSupplier 该值，代码如下（以 RootBeanDefinition 为例）：
 		 * // RootBeanDefinition.java
 		 * public <T> RootBeanDefinition(@Nullable Class<T> beanClass, String scope, @Nullable Supplier<T> instanceSupplier) {
-		 * 	super();
-		 * 	setBeanClass(beanClass);
-		 * 	setScope(scope);
-		 * 	// 设置 instanceSupplier 属性
-		 * 	setInstanceSupplier(instanceSupplier);
+		 *    super();
+		 * 	  setBeanClass(beanClass);
+		 * 	  setScope(scope);
+		 * 	  // 设置 instanceSupplier 属性
+		 * 	  setInstanceSupplier(instanceSupplier);
 		 * }
 		 *
 		 * 如果设置了 instanceSupplier 属性，则可以调用 #obtainFromSupplier(Supplier<?> instanceSupplier, String beanName) 方法，完成 Bean 的初始化。
@@ -1213,6 +1213,18 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			return instantiateUsingFactoryMethod(beanName, mbd, args);
 		}
 
+		/**
+		 * 这里做个汇总：
+		 * #createBeanInstance(String beanName, RootBeanDefinition mbd, Object[] args) 方法，用于实例化 Bean 对象。它会根据不同情况，选择不同的实例化策略来完成 Bean 的初始化，主要包括：
+		 *
+		 * Supplier 回调：#obtainFromSupplier(final String beanName, final RootBeanDefinition mbd) 方法。
+		 * 工厂方法初始化：#instantiateUsingFactoryMethod(String beanName, RootBeanDefinition mbd, @Nullable Object[] explicitArgs) 方法。
+		 * 构造函数自动注入初始化：#autowireConstructor(final String beanName, final RootBeanDefinition mbd, Constructor<?>[] chosenCtors, final Object[] explicitArgs) 方法。
+		 * 默认构造函数注入：#instantiateBean(final String beanName, final RootBeanDefinition mbd) 方法。
+		 *
+		 * 上面已经分析了前两种 Supplier 回调和工厂方法初始化。现在看后两种构造函数注入。
+		 */
+
 		// Shortcut when re-creating the same bean...
 		// <3> 重新创建bean
 		boolean resolved = false;
@@ -1220,10 +1232,11 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		if (args == null) {
 			// constructorArgumentLock 构造函数的常用锁
 			synchronized (mbd.constructorArgumentLock) {
-				// 如果已缓存的解析的构造函数或者工厂方法不为空，则可以利用构造函数解析
+				// 如果已缓存的解析的构造函数或者工厂方法不为空，则可以利用构造函数解析：autowireConstructor(beanName, mbd, null, null)
 				// 因为需要根据参数确认到底使用哪个构造函数，该过程比较消耗性能，所以采用缓存机制，这里也相当于是打个标记
 				if (mbd.resolvedConstructorOrFactoryMethod != null) {
 					resolved = true;
+					//是否需要构造函数自动注入
 					autowireNecessary = mbd.constructorArgumentsResolved;
 				}
 			}
@@ -1245,8 +1258,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// 主要是检查已经注册的 SmartInstantiationAwareBeanPostProcessor
 		Constructor<?>[] ctors = determineConstructorsFromBeanPostProcessors(beanClass, beanName);
 		// <4.1> 有参数情况时，创建 Bean 。先利用参数个数，类型等，确定最精确匹配的构造方法。
-		if (ctors != null || mbd.getResolvedAutowireMode() == AUTOWIRE_CONSTRUCTOR ||
-				mbd.hasConstructorArgumentValues() || !ObjectUtils.isEmpty(args)) {
+		if (ctors != null || mbd.getResolvedAutowireMode() == AUTOWIRE_CONSTRUCTOR || mbd.hasConstructorArgumentValues() || !ObjectUtils.isEmpty(args)) {
 			return autowireConstructor(beanName, mbd, ctors, args);
 		}
 
@@ -1279,7 +1291,12 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * @see #getObjectForBeanInstance
 	 * @since 5.0
 	 * <p>
-	 * 对设置了instanceSupplier的BeanDefinition进行初始化
+	 * Supplier 回调：#obtainFromSupplier(final String beanName, final RootBeanDefinition mbd) 方法。
+	 * 工厂方法初始化：#instantiateUsingFactoryMethod(String beanName, RootBeanDefinition mbd, @Nullable Object[] explicitArgs) 方法。
+	 * 构造函数自动注入初始化：#autowireConstructor(final String beanName, final RootBeanDefinition mbd, Constructor<?>[] chosenCtors, final Object[] explicitArgs) 方法。
+	 * 默认构造函数注入：#instantiateBean(final String beanName, final RootBeanDefinition mbd) 方法。
+	 * <p>
+	 * 该函数为：对设置了 instanceSupplier 的 BeanDefinition 进行初始化
 	 */
 	protected BeanWrapper obtainFromSupplier(Supplier<?> instanceSupplier, String beanName) {
 		Object instance;
@@ -1394,7 +1411,12 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * @return a BeanWrapper for the new instance
 	 * @see #getBean(String, Object[])
 	 * <p>
-	 * 如果mbd是工厂，使用该方法完成 bean 的初始化工作
+	 * Supplier 回调：#obtainFromSupplier(final String beanName, final RootBeanDefinition mbd) 方法。
+	 * 工厂方法初始化：#instantiateUsingFactoryMethod(String beanName, RootBeanDefinition mbd, @Nullable Object[] explicitArgs) 方法。
+	 * 构造函数自动注入初始化：#autowireConstructor(final String beanName, final RootBeanDefinition mbd, Constructor<?>[] chosenCtors, final Object[] explicitArgs) 方法。
+	 * 默认构造函数注入：#instantiateBean(final String beanName, final RootBeanDefinition mbd) 方法。
+	 * <p>
+	 * 该函数为：如果mbd是工厂，使用该方法完成 bean 的初始化工作
 	 */
 	protected BeanWrapper instantiateUsingFactoryMethod(String beanName, RootBeanDefinition mbd, @Nullable Object[] explicitArgs) {
 		// 构造一个 ConstructorResolver 对象，然后调用其 #instantiateUsingFactoryMethod(EvaluationContext context, String typeName, List<TypeDescriptor> argumentTypes) 方法。
@@ -1416,10 +1438,15 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * @param explicitArgs argument values passed in programmatically via the getBean method,
 	 *                     or {@code null} if none (-> use constructor argument values from bean definition)
 	 * @return a BeanWrapper for the new instance
+	 * <p>
+	 * Supplier 回调：#obtainFromSupplier(final String beanName, final RootBeanDefinition mbd) 方法。
+	 * 工厂方法初始化：#instantiateUsingFactoryMethod(String beanName, RootBeanDefinition mbd, @Nullable Object[] explicitArgs) 方法。
+	 * 构造函数自动注入初始化：#autowireConstructor(final String beanName, final RootBeanDefinition mbd, Constructor<?>[] chosenCtors, final Object[] explicitArgs) 方法。
+	 * 默认构造函数注入：#instantiateBean(final String beanName, final RootBeanDefinition mbd) 方法。
+	 * <p>
+	 * 该函数为：构造函数自动注入初始化，通过带有参数的构造方法，来初始化 Bean 对象
 	 */
-	protected BeanWrapper autowireConstructor(
-			String beanName, RootBeanDefinition mbd, @Nullable Constructor<?>[] ctors, @Nullable Object[] explicitArgs) {
-
+	protected BeanWrapper autowireConstructor(String beanName, RootBeanDefinition mbd, @Nullable Constructor<?>[] ctors, @Nullable Object[] explicitArgs) {
 		return new ConstructorResolver(this).autowireConstructor(beanName, mbd, ctors, explicitArgs);
 	}
 

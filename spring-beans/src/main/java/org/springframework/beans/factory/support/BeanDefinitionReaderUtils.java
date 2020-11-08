@@ -172,14 +172,16 @@ public abstract class BeanDefinitionReaderUtils {
 		// Register bean definition under primary name.
 		// 注册 beanName
 		String beanName = definitionHolder.getBeanName();
+		// 有 DefaultListableBeanFactory、SimpleAliasRegistry ，SimpleAliasRegistry是用来测试简单用的，DefaultListableBeanFactory才是真正的注册
 		registry.registerBeanDefinition(beanName, definitionHolder.getBeanDefinition());
 
 		// Register aliases for bean name, if any.
-		// 注册 alias
+		// 注册 alias 和 beanName 的映射
 		String[] aliases = definitionHolder.getAliases();
 		if (aliases != null) {
 			for (String alias : aliases) {
-				//注册 alias 和 beanName 的映射（SimpleAliasRegistry的registerAlias）
+				// 注册 alias 和 beanName 的映射（SimpleAliasRegistry的registerAlias）
+				// 这里会做一个：判断是否存在循环指向
 				registry.registerAlias(beanName, alias);
 			}
 		}

@@ -164,7 +164,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 
 		/**
 		 * <1> 处，创建 BeanDefinitionParserDelegate 对象，并进行设置到 delegate 。<br>
-		 * BeanDefinitionParserDelegate 是一个重要的类，它负责解析 BeanDefinition，定义了解析 XML Element 的各种方法，初始化代码如下：<br>
+		 * BeanDefinitionParserDelegate 是一个重要的委托类，它负责解析 BeanDefinition，定义了解析 XML Element 的各种方法，初始化代码如下：<br>
 		 * <br>
 		 * protected BeanDefinitionParserDelegate createDelegate(XmlReaderContext readerContext, Element root, @Nullable BeanDefinitionParserDelegate parentDelegate) {
 		 *     // 创建 BeanDefinitionParserDelegate 对象
@@ -187,9 +187,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 		 */
 	}
 
-	protected BeanDefinitionParserDelegate createDelegate(
-			XmlReaderContext readerContext, Element root, @Nullable BeanDefinitionParserDelegate parentDelegate) {
-
+	protected BeanDefinitionParserDelegate createDelegate(XmlReaderContext readerContext, Element root, @Nullable BeanDefinitionParserDelegate parentDelegate) {
 		BeanDefinitionParserDelegate delegate = new BeanDefinitionParserDelegate(readerContext);
 		delegate.initDefaults(root, parentDelegate);
 		return delegate;
@@ -229,7 +227,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 		 * 配置文件式声明：<bean id="studentService" class="org.springframework.core.StudentService" /> 。对应 <1> 处。<br>
 		 * 自定义注解方式：<tx:annotation-driven> 。对应 <2> 处。<br>
 		 * <1> 处，如果根节点或子节点使用默认命名空间，调用 #parseDefaultElement(Element ele, BeanDefinitionParserDelegate delegate) 方法，执行默认解析。代码如下：<br>
-		 *<br>
+		 * <br>
 		 * private void parseDefaultElement(Element ele, BeanDefinitionParserDelegate delegate) {
 		 * 	if (delegate.nodeNameEquals(ele, IMPORT_ELEMENT)) { // import
 		 * 		importBeanDefinitionResource(ele);
@@ -430,7 +428,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 	 * Process the given bean element, parsing the bean definition
 	 * and registering it with the registry.
 	 * <p>
-	 * DefaultBeanDefinitionDocumentReader 的 #processBeanDefinition(Element ele, BeanDefinitionParserDelegate delegate) 方法，负责 <bean> 标签的解析：
+	 * DefaultBeanDefinitionDocumentReader 的 #processBeanDefinition(Element ele, BeanDefinitionParserDelegate delegate) 方法，负责 <bean> 标签的解析：（注意不是parseBeanDefinitions）
 	 * 1、在解析过程中，首先调用 BeanDefinitionParserDelegate#parseBeanDefinitionElement(Element ele) 方法，完成基本属性、默认标签的解析。
 	 * 基本属性、
 	 * 默认标签：<meta>、<lookup-method>、<replace-method>、<constructor-arg>、<property>、<qualifier>
@@ -459,7 +457,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 		/**
 		 * 解析工作分为三步：
 		 * 1、解析默认标签。
-		 * 2、解析默认标签后下得自定义标签。
+		 * 2、解析默认标签下的自定义标签。
 		 * 3、注册解析后的 BeanDefinition 。
 		 * 经过前面两个步骤的解析，这时的 BeanDefinition 已经可以满足后续的使用要求了，那么接下来的工作就是将这些 BeanDefinition 进行注册，也就是完成第三步。
 		 */

@@ -40,18 +40,16 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
  * @author Chris Beams
  * @since 19.12.2004
  */
-@SuppressWarnings({ "rawtypes", "unchecked" })
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class XmlBeanCollectionTests {
 
 	private final DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
-
 
 	@BeforeEach
 	public void loadBeans() {
 		new XmlBeanDefinitionReader(this.beanFactory).loadBeanDefinitions(
 				new ClassPathResource("collections.xml", getClass()));
 	}
-
 
 	@Test
 	public void testCollectionFactoryDefaults() throws Exception {
@@ -76,6 +74,11 @@ public class XmlBeanCollectionTests {
 
 	/**
 	 * 加载bean 测试用例
+	 * 加载 Bean 阶段：
+	 * 经过容器初始化阶段后，应用程序中定义的 bean 信息已经全部加载到系统的map中了，当我们显示或者隐式地调用 BeanFactory#getBean(...) 方法时，则会触发加载 Bean 阶段。
+	 * 在这阶段，容器会首先检查所请求的对象是否已经初始化完成了，如果没有，则会根据注册的 Bean 信息实例化请求的对象，并为其注册依赖，然后将其返回给请求方。
+	 * 至此第二个阶段也已经完成。
+	 * 容器初始化阶段：{@link XmlBeanDefinitionReaderTests#withImport}
 	 */
 	@Test
 	public void testRefSubelement() throws Exception {
@@ -169,8 +172,8 @@ public class XmlBeanCollectionTests {
 	public void testInvalidBeanNameReference() throws Exception {
 		assertThatExceptionOfType(BeanCreationException.class).isThrownBy(() ->
 				this.beanFactory.getBean("jumble2"))
-			.withCauseInstanceOf(BeanDefinitionStoreException.class)
-			.withMessageContaining("rod2");
+				.withCauseInstanceOf(BeanDefinitionStoreException.class)
+				.withMessageContaining("rod2");
 	}
 
 	@Test
@@ -339,7 +342,7 @@ public class XmlBeanCollectionTests {
 	@Test
 	public void testClassList() throws Exception {
 		HasMap hasMap = (HasMap) this.beanFactory.getBean("classList");
-		assertThat(hasMap.getClassList().size()== 2).isTrue();
+		assertThat(hasMap.getClassList().size() == 2).isTrue();
 		assertThat(hasMap.getClassList().get(0).equals(String.class)).isTrue();
 		assertThat(hasMap.getClassList().get(1).equals(Exception.class)).isTrue();
 	}
@@ -436,7 +439,6 @@ public class XmlBeanCollectionTests {
 		assertThat(set.contains("ONE")).isTrue();
 		assertThat(set.contains("TWO")).isTrue();
 	}
-
 
 	public static class MapAndSet {
 

@@ -1138,6 +1138,8 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	 * Validate this bean definition.
 	 *
 	 * @throws BeanDefinitionValidationException in case of validation failure
+	 *                                           <p>
+	 *                                           主要是对 methodOverrides 进行校验。
 	 */
 	public void validate() throws BeanDefinitionValidationException {
 		if (hasMethodOverrides() && getFactoryMethodName() != null) {

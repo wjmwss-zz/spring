@@ -390,7 +390,7 @@ public class BeanDefinitionParserDelegate {
 			}
 		}
 
-		// <2> 检查 beanName 的唯一性
+		// <2> 检查 beanName 的唯一性，具体解析见函数体内
 		if (containingBean == null) {
 			checkNameUniqueness(beanName, aliases, ele);
 		}
@@ -454,6 +454,9 @@ public class BeanDefinitionParserDelegate {
 		 * //别名集合
 		 * @Nullable
 		 * private final String[] aliases;
+		 *
+		 * BeanDefinitionHolder：顾名思义就是对BeanDefinition的持有，同时持有的包括BeanDefinition的名称和别名
+		 * BeanDefinitionHolder同时实现了BeanMetadataElement
 		 */
 	}
 
@@ -512,12 +515,13 @@ public class BeanDefinitionParserDelegate {
 		}
 
 		try {
-			// 创建用于承载属性的 AbstractBeanDefinition 实例，具体见函数体内
+			// 创建用于承载属性的 AbstractBeanDefinition 实例（返回的是 GenericBeanDefinition ），具体见函数体内
 			AbstractBeanDefinition bd = createBeanDefinition(className, parent);
 
 			// 解析默认 bean 的各种标签属性（比如name、autowire、lazy-init、parent、scope等的标签属性）（具体解析见函数体内）
+			// 这一步，就是将标签属性解析，然后全部注入 GenericBeanDefinition 中
 			parseBeanDefinitionAttributes(ele, beanName, containingBean, bd);
-			// 提取 description
+			// 提取 <description> 标签的内容
 			bd.setDescription(DomUtils.getChildElementValueByTagName(ele, DESCRIPTION_ELEMENT));
 
 			// tips：
@@ -595,7 +599,7 @@ public class BeanDefinitionParserDelegate {
 	 * @param containingBean containing bean definition
 	 * @return a bean definition initialized according to the bean element attributes
 	 * <p>
-	 * 该方法将创建好的 GenericBeanDefinition 实例当做参数，对 bean 标签的所有属性进行解析，
+	 * 该方法将创建好的 GenericBeanDefinition 实例当做参数，对 bean 标签的所有属性进行解析，解析后注入 GenericBeanDefinition 中，并返回 GenericBeanDefinition
 	 */
 	public AbstractBeanDefinition parseBeanDefinitionAttributes(Element ele, String beanName, @Nullable BeanDefinition containingBean, AbstractBeanDefinition bd) {
 

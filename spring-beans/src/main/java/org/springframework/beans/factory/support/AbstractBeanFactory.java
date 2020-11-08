@@ -246,6 +246,11 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 *                        requiredType ：要获取 bean 的类型
 	 *                        args ：创建 Bean 时传递的参数。这个参数仅限于创建 Bean 时使用。
 	 *                        typeCheckOnly ：是否为类型检查。
+	 *                        <p>
+	 *                        在Spring中，bean可以被定义为两种模式：prototype（多例、原型）和singleton（单例）
+	 *                        singleton（单例）：只有一个共享的实例存在，所有对这个bean的请求都会返回这个唯一的实例。
+	 *                        prototype（多例）：对这个bean的每次请求都会创建一个新的bean实例，类似于new。
+	 *                        Spring bean 默认是单例模式。
 	 */
 	@SuppressWarnings("unchecked")
 	protected <T> T doGetBean(String name, @Nullable Class<T> requiredType, @Nullable Object[] args, boolean typeCheckOnly) throws BeansException {
@@ -289,7 +294,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			// We're assumably within a circular reference.
 			/**
 			 * Spring 只处理单例模式下的循环依赖，对于原型模式的循环依赖会直接抛出异常。主要原因还是在于，和 Spring 解决循环依赖的策略有关。
-			 * 对于单例( Singleton )模式， Spring 在创建 Bean 的时候并不是等 Bean 完全创建完成后才会将 Bean 添加至缓存中，而是不等 Bean 创建完成就会将创建 Bean 的 ObjectFactory 提早加入到缓存中，这样一旦下一个 Bean 创建的时候需要依赖 bean 时则直接使用 ObjectFactroy 。
+			 * 对于单例( Singleton )模式， Spring 在创建 Bean 的时候并不是等 Bean 完全创建完成后才会将 Bean 添加至缓存中，而是不等 Bean 创建完成就会将创建 Bean 的 ObjectFactory 提早加入到缓存中，这样一旦下一个 Bean 创建的时候需要依赖 bean 时则直接使用 ObjectFactory 。
 			 * 但是原型( Prototype )模式，我们知道是没法使用缓存的，所以 Spring 对原型模式的循环依赖处理策略则是不处理。
 			 */
 
@@ -1996,8 +2001,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		// Now we have the bean instance, which may be a normal bean or a FactoryBean.
 		// If it's a FactoryBean, we use it to create a bean instance, unless the
 		// caller actually wants a reference to the factory.
-		// 到这里我们就有了一个 Bean 实例，当然该实例可能是会是是一个正常的 bean 又或者是一个 FactoryBean
-		// <2> 如果是 FactoryBean ，用来创建 Bean 实例，如果不是 FactoryBean，直接返回 Bean
+		// 到这里我们就有了一个 Bean 实例，当然该实例可能是一个正常的 bean 又或者是一个 FactoryBean
+		// <2> 如果是 FactoryBean ，用来创建 Bean 实例，如果不是 FactoryBean，直接返回 Bean（不是FactoryBean，则为最终实例）
 		if (!(beanInstance instanceof FactoryBean)) {
 			return beanInstance;
 		}
@@ -2030,7 +2035,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		 *
 		 * <1> 处，若 name 为工厂相关的（以 & 开头），且 beanInstance 为 NullBean 类型则直接返回，如果 beanInstance 不为 FactoryBean 类型则抛出 BeanIsNotAFactoryException 异常。这里主要是校验 beanInstance 的正确性。
 		 * <2> 处，如果 beanInstance 不为 FactoryBean 类型或者 name 也不是与工厂相关的，则直接返回 beanInstance 这个 Bean 对象。这里主要是对非 FactoryBean 类型处理。
-		 * <3> 处，如果 BeanDefinition 为空，则从 factoryBeanObjectCache 中加载 Bean 对象。如果还是空，则可以断定 beanInstance 一定是 FactoryBean 类型，则委托 #getObjectFromFactoryBean(FactoryBean<?> factory, String beanName, boolean shouldPostProcess) 方法，进行处理，使用 FactoryBean 获得 Bean 对象。
+		 * <3> 处，如果 BeanDefinition 为空，则从 factoryBeanObjectCache 缓存中加载 Bean 对象。如果还是空，则可以断定 beanInstance 一定是 FactoryBean 类型，则委托 #getObjectFromFactoryBean(FactoryBean<?> factory, String beanName, boolean shouldPostProcess) 方法，进行处理，使用 FactoryBean 获得 Bean 对象。
 		 *
 		 * 总结该方法，分为两种情况
 		 * 第一种，当该实例对象为非 FactoryBean 类型，直接返回给定的 Bean 实例对象 beanInstance 。

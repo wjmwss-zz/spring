@@ -1007,7 +1007,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			this.beanDefinitionMap.put(beanName, beanDefinition);
 			// <4> 如果未存在
 		} else {
-			// 检测创建 Bean 阶段是否已经开启，如果开启了则需要对 beanDefinitionMap 进行并发控制
+			// 检测 Bean的创建阶段 是否已经开启，如果开启了则需要对 beanDefinitionMap 进行并发控制
 			if (hasBeanCreationStarted()) {
 				// beanDefinitionMap 为全局变量，避免并发情况
 				// Cannot modify startup-time collection elements anymore (for stable iteration)
@@ -1050,7 +1050,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		 * <4> 若缓存中没有指定 beanName 的 BeanDefinition，则判断当前阶段是否已经开始了 Bean 的创建阶段？如果是，则需要对 beanDefinitionMap 进行加锁控制并发问题，否则直接设置即可。
 		 * 对于 #hasBeanCreationStarted() 方法，后续做详细介绍，这里不过多阐述。
 		 * <5> 若缓存中存在该 beanName 或者单例 bean 集合中存在该 beanName ，则调用 #resetBeanDefinition(String beanName) 方法，重置 BeanDefinition 缓存。
-		 * 😈 其实整段代码的核心就在于 this.beanDefinitionMap.put(beanName, beanDefinition); 代码块。而 BeanDefinition 的缓存也不是神奇的东西，就是定义一个 Map ：
+		 * 其实整段代码的核心就在于 this.beanDefinitionMap.put(beanName, beanDefinition); 代码块。而 BeanDefinition 的缓存也不是神奇的东西，就是定义一个 Map ：
 		 *
 		 * key 为 beanName 。
 		 * value 为 BeanDefinition 对象。

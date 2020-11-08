@@ -541,7 +541,7 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 		if (validationModeToUse != VALIDATION_AUTO) {
 			return validationModeToUse;
 		}
-		// 其次，自动获取验证模式
+		// <2> 其次，自动获取验证模式
 		int detectedMode = detectValidationMode(resource);
 		if (detectedMode != VALIDATION_AUTO) {
 			return detectedMode;
@@ -549,7 +549,7 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 		// Hmm, we didn't get a clear indication... Let's assume XSD,
 		// since apparently no DTD declaration has been found up until
 		// detection stopped (before finding the document's root tag).
-		// 最后，使用 VALIDATION_XSD 做为默认
+		// <3> 最后，使用 VALIDATION_XSD 做为默认
 		return VALIDATION_XSD;
 		/**
 		 * <1> 处，调用 #getValidationMode() 方法，获取指定的验证模式( validationMode )。如果有手动指定，则直接返回。另外，对于 validationMode 属性的设置和获得的代码，代码如下：

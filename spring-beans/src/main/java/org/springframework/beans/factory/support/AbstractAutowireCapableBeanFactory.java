@@ -479,7 +479,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		// Prepare method overrides.
 		try {
-			// <2> 验证和准备覆盖方法，处理 override 属性，具体解析见函数体内
+			// <2> 验证和准备覆盖方法，处理 override 属性（其实就是一个验证是否存在重载方法，并做了一个小优化而已，没有什么实质性的处理），具体解析见函数体内
 			mbdToUse.prepareMethodOverrides();
 		} catch (BeanDefinitionValidationException ex) {
 			throw new BeanDefinitionStoreException(mbdToUse.getResourceDescription(), beanName, "Validation of method overrides failed", ex);

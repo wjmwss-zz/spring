@@ -114,6 +114,8 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 					} else {
 						/**
 						 * <1.3> 如果需要后续处理( shouldPostProcess = true )，则进行进一步处理，步骤如下：
+						 * shouldPostProcess：是否需要后续处理，这点与 postProcessObjectFromFactoryBean (Object object, String beanName) 方法
+						 * 息息相关，postProcessObjectFromFactoryBean 可以用户自定义后置处理器，如果 shouldPostProcess 为true，表示用户自定义了后置处理器
 						 *
 						 * 若该 Bean 处于创建中（#isSingletonCurrentlyInCreation(String beanName) 方法返回 true ），则返回非处理的 Bean 对象，而不是存储它。
 						 * 调用 #beforeSingletonCreation(String beanName) 方法，进行创建之前的处理。默认实现：将该 Bean 标志为当前创建中。
@@ -172,7 +174,7 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 				}
 				return object;
 			}
-			// <2> .
+			// <2> .不为单例模式或者不在创建中
 		} else {
 			// 为空，则从 FactoryBean 中获取对象
 			Object object = doGetObjectFromFactoryBean(factory, beanName);

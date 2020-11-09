@@ -208,6 +208,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 * @return the registered singleton object, or {@code null} if none found
 	 * <p>
 	 * 从单例 Bean 缓存中获取 Bean
+	 * allowEarlyReference 是否允许提前创建
 	 */
 	@Nullable
 	protected Object getSingleton(String beanName, boolean allowEarlyReference) {
@@ -285,7 +286,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 * 该函数做了哪些准备呢：
 	 * 1、 <1> 处，再次检查缓存是否已经加载过，如果已经加载了则直接返回，否则开始加载过程。
 	 * 2、 <2> 处，调用 #beforeSingletonCreation(String beanName) 方法，记录加载单例 bean 之前的加载状态，即前置处理。具体解析可以见函数体内
-	 * 3、 <3> 处，调用参数传递的 ObjectFactory 的 #getObject() 方法，实例化 bean 。【非常重要】后续文章，详细解析。
+	 * 3、 <3> 处，调用参数传递的 ObjectFactory 的 #getObject() 方法，实例化 bean 。【非常重要】
 	 * 4、 <4> 处，调用 #afterSingletonCreation(String beanName) 方法，进行加载单例后的后置处理。具体解析可以见函数体内
 	 * 5、 <5> 处，调用 #addSingleton(String beanName, Object singletonObject) 方法，将结果记录并加入值缓存中，同时删除加载 bean 过程中所记录的一些辅助状态。具体解析可以见函数体内
 	 */
@@ -312,8 +313,8 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 					this.suppressedExceptions = new LinkedHashSet<>();
 				}
 				try {
-					// <3> 初始化 bean，具体解析见函数体内
-					// 这个过程其实是调用 createBean() 方法
+					// <3> 实例化 bean，【重要】后续文章，详细解析。
+					// 这个过程其实是调用 该方法的入参：singletonFactory 中的 createBean() 方法（就是lambda里的回调）
 					singletonObject = singletonFactory.getObject();
 					newSingleton = true;
 				} catch (IllegalStateException ex) {
@@ -573,7 +574,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 *
 	 * @param beanName
 	 * @param dependentBeanName
-	 * @param alreadySeen
+	 * @param alreadySeen       已经检测过的依赖 bean
 	 * @return
 	 */
 	private boolean isDependent(String beanName, String dependentBeanName, @Nullable Set<String> alreadySeen) {

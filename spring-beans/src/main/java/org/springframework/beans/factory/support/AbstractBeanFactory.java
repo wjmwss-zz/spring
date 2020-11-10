@@ -451,7 +451,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 							// 加载前置处理，具体解析见函数体内（用的是原型bean的加载前置处理）
 							beforePrototypeCreation(beanName);
 							try {
-								// 创建 Bean 对象（【非常重要】后续文章，详细解析。）
+								// 创建 Bean 对象（非常重要，所有 Bean 实例的创建都会交给这个方法去实现），具体解析见函数体内
 								return createBean(beanName, mbd, args);
 							} finally {
 								// 加载后缀处理，具体解析见函数体内（用的是原型bean的加载后置处理）
@@ -517,7 +517,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		 * 一个是 #getObjectForBeanInstance(Object beanInstance, String name, String beanName, RootBeanDefinition mbd) 方法。
 		 * 这两个方法在上面三个模块都有调用。
 		 *
-		 * #createBean(String beanName, RootBeanDefinition mbd, Object[] args) 方法，该方法后续详细说明。
+		 * #createBean(String beanName, RootBeanDefinition mbd, Object[] args) 方法，（非常重要，所有 Bean 实例的创建都会交给这个方法去实现），该方法的具体解析见函数体内
 		 *
 		 * #getObjectForBeanInstance(Object beanInstance, String name, String beanName, RootBeanDefinition mbd) 方法，具体解析可以见函数体内
 		 * 这个方法主要是验证以下我们得到的 bean 的正确性，其实就是检测当前 bean 是否是 FactoryBean 类型的 bean 。
@@ -2177,7 +2177,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 *                               <p>
 	 *                               该方法定义在 AbstractBeanFactory 中，由 AbstractAutowireCapableBeanFactory 默认实现，其含义是根据给定的 BeanDefinition 和 args 实例化一个 Bean 对象。
 	 *                               如果该 BeanDefinition 存在父类，则该 BeanDefinition 已经合并了父类的属性。
-	 *                               所有 Bean 实例的创建，都会委托给该方法实现。
+	 *                               非常重要：所有 Bean 实例的创建，都会委托给该方法实现。
 	 *                               该方法接受三个方法参数：
 	 *                               beanName ：bean 的名字。
 	 *                               mbd ：已经合并了父类属性的（如果有的话）BeanDefinition 对象。

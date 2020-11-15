@@ -50,6 +50,8 @@ import java.util.*;
  * @see #instantiateUsingFactoryMethod
  * @see AbstractAutowireCapableBeanFactory
  * @since 2.0
+ * <p>
+ * 构造方法或者工厂类初始化 bean 的委托类
  */
 class ConstructorResolver {
 
@@ -72,6 +74,8 @@ class ConstructorResolver {
 	 * Create a new ConstructorResolver for the given factory and instantiation strategy.
 	 *
 	 * @param beanFactory the BeanFactory to work with
+	 *                    <p>
+	 *                    构造方法或者工厂类初始化 bean 的委托类
 	 */
 	public ConstructorResolver(AbstractAutowireCapableBeanFactory beanFactory) {
 		this.beanFactory = beanFactory;
@@ -131,7 +135,8 @@ class ConstructorResolver {
 			}
 			// 缓存中存在,则解析存储在 BeanDefinition 中的参数（需要转换一番）
 			// 如给定方法的构造函数 A(int ,int )，则通过此方法后就会把配置文件中的("1","1")转换为 (1,1)
-			// 缓存中的值可能是原始值也有可能是最终值
+			// 缓存中的值可能是原始值也有可能是最终值：比如我们构造函数中的类型为 Integer 类型的 1 ，但是原始的参数类型有可能是 String 类型的 "1" ，所以即便是从缓存中得到了构造参数，也需要经过一番的类型转换确保参数类型完全对应。
+			// 此处不详细解析该方法，有兴趣再看。
 			if (argsToResolve != null) {
 				argsToUse = resolvePreparedArguments(beanName, mbd, bw, constructorToUse, argsToResolve, true);
 			}
@@ -302,24 +307,32 @@ class ConstructorResolver {
 		 * 但是如果理解了 #instantiateUsingFactoryMethod(...) 方法的初始化 bean 的过程，那么 #autowireConstructor(...) 方法，也不存在什么难的地方了。
 		 * 一句话概括：首先确定构造函数参数、构造函数，然后调用相应的初始化策略进行 bean 的初始化。
 		 * 关于如何确定构造函数、构造参数，该部分逻辑和 #instantiateUsingFactoryMethod(...) 方法，基本一致。 所以这里不再重复阐述。
+		 *
+		 * 接下来看 #instantiate(String beanName, RootBeanDefinition mbd, Constructor<?> constructorToUse, Object[] argsToUse) Bean的初始化策略
 		 */
 	}
 
-	private Object instantiate(
-			String beanName, RootBeanDefinition mbd, Constructor<?> constructorToUse, Object[] argsToUse) {
-
+	/**
+	 * Bean的初始化策略，其本质是调用 #BeanUtils.instantiateClass(Constructor<T> ctor, Object... args)
+	 *
+	 * @param beanName
+	 * @param mbd
+	 * @param constructorToUse
+	 * @param argsToUse
+	 * @return
+	 */
+	private Object instantiate(String beanName, RootBeanDefinition mbd, Constructor<?> constructorToUse, Object[] argsToUse) {
 		try {
+			// 获取实例化 Bean 的策略 InstantiationStrategy 对象。
 			InstantiationStrategy strategy = this.beanFactory.getInstantiationStrategy();
 			if (System.getSecurityManager() != null) {
-				return AccessController.doPrivileged((PrivilegedAction<Object>) () ->
-								strategy.instantiate(mbd, beanName, this.beanFactory, constructorToUse, argsToUse),
-						this.beanFactory.getAccessControlContext());
+				// 通过策略对象调用初始化bean，具体解析见函数体内（包含了反射创建 Bean 对象、CGLIB 创建 Bean 对象）
+				return AccessController.doPrivileged((PrivilegedAction<Object>) () -> strategy.instantiate(mbd, beanName, this.beanFactory, constructorToUse, argsToUse), this.beanFactory.getAccessControlContext());
 			} else {
 				return strategy.instantiate(mbd, beanName, this.beanFactory, constructorToUse, argsToUse);
 			}
 		} catch (Throwable ex) {
-			throw new BeanCreationException(mbd.getResourceDescription(), beanName,
-					"Bean instantiation via constructor failed", ex);
+			throw new BeanCreationException(mbd.getResourceDescription(), beanName, "Bean instantiation via constructor failed", ex);
 		}
 	}
 
@@ -401,6 +414,7 @@ class ConstructorResolver {
 	 * 构造函数自动注入初始化：#autowireConstructor(final String beanName, final RootBeanDefinition mbd, Constructor<?>[] chosenCtors, final Object[] explicitArgs) 方法。
 	 * 默认构造函数注入：#instantiateBean(final String beanName, final RootBeanDefinition mbd) 方法。
 	 * <p>
+	 * 工厂方法初始化：#instantiateUsingFactoryMethod(String beanName, RootBeanDefinition mbd, @Nullable Object[] explicitArgs) 方法。
 	 * 如果mbd是工厂，使用该方法完成 bean 的初始化工作
 	 * org.springframework.expression.ConstructorResolver 是构造方法或者工厂类初始化 bean 的委托类
 	 * 【预警】该函数代码量巨大
@@ -428,7 +442,7 @@ class ConstructorResolver {
 			if (factoryBeanName.equals(beanName)) {
 				throw new BeanDefinitionStoreException(mbd.getResourceDescription(), beanName, "factory-bean reference points back to the same bean definition");
 			}
-			// 获取工厂实例
+			// 获取工厂实例（这里又回到了最初的加载bean）
 			factoryBean = this.beanFactory.getBean(factoryBeanName);
 			if (mbd.isSingleton() && this.beanFactory.containsSingleton(beanName)) {
 				throw new ImplicitlyAppearedSingletonException();

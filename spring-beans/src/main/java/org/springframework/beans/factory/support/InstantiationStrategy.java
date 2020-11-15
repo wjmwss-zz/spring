@@ -45,6 +45,8 @@ public interface InstantiationStrategy {
 	 * @param owner    the owning BeanFactory
 	 * @return a bean instance for this bean definition
 	 * @throws BeansException if the instantiation attempt failed
+	 *                        <p>
+	 *                        创建bean对象，（会涉及到反射创建、CGLIB创建）
 	 */
 	Object instantiate(RootBeanDefinition bd, @Nullable String beanName, BeanFactory owner)
 			throws BeansException;
@@ -62,9 +64,10 @@ public interface InstantiationStrategy {
 	 * @param args     the constructor arguments to apply
 	 * @return a bean instance for this bean definition
 	 * @throws BeansException if the instantiation attempt failed
+	 *                        <p>
+	 *                        初始化bean，具体解析见函数体内（包含了反射创建 Bean 对象、CGLIB 创建 Bean 对象）
 	 */
-	Object instantiate(RootBeanDefinition bd, @Nullable String beanName, BeanFactory owner,
-					   Constructor<?> ctor, Object... args) throws BeansException;
+	Object instantiate(RootBeanDefinition bd, @Nullable String beanName, BeanFactory owner, Constructor<?> ctor, Object... args) throws BeansException;
 
 	/**
 	 * Return an instance of the bean with the given name in this factory,

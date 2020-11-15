@@ -534,7 +534,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 *                          其实将就是该映射关系保存到两个集合中：dependentBeanMap、dependenciesForBeanMap 。
 	 */
 	public void registerDependentBean(String beanName, String dependentBeanName) {
-		// 获取 beanName
+		// 获取 beanName，具体解析见函数体内
 		String canonicalName = canonicalName(beanName);
 
 		// 添加 <canonicalName, <dependentBeanName>> 到 dependentBeanMap 中

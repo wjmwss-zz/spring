@@ -312,7 +312,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		BeanWrapper bw = new BeanWrapperImpl(existingBean);
 		initBeanWrapper(bw);
 		populateBean(beanName, bd, bw);
-		return initializeBean(beanName, existingBean, bd);
+		return (beanName, existingBean, bd);
 	}
 
 	//-------------------------------------------------------------------------
@@ -2067,8 +2067,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * 经历了实例化、填充，终于到了最后一步：初始化Bean，
 	 * 初始化 bean 的方法其实就是三个步骤的处理，而这三个步骤主要还是根据用户设定的来进行初始化，这三个过程为：
 	 * 1、激活 Aware 方法
-	 * 2、后置处理器的应用
+	 * 2、后置处理器的应用：postProcessBeforeInitialization(Object bean, String beanName)
 	 * 3、激活自定义的 init 方法
+	 * 4、后置处理器的应用：applyBeanPostProcessorsAfterInitialization(Object bean, String beanName)
 	 */
 	protected Object initializeBean(String beanName, Object bean, @Nullable RootBeanDefinition mbd) {
 		// 又是安全模式。。

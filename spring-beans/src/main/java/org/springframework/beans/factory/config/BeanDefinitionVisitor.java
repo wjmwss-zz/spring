@@ -35,21 +35,21 @@ import java.util.*;
  *
  * @author Juergen Hoeller
  * @author Sam Brannen
- * @since 1.2
  * @see BeanDefinition
  * @see BeanDefinition#getPropertyValues
  * @see BeanDefinition#getConstructorArgumentValues
  * @see PlaceholderConfigurerSupport
+ * @since 1.2
  */
 public class BeanDefinitionVisitor {
 
 	@Nullable
 	private StringValueResolver valueResolver;
 
-
 	/**
 	 * Create a new BeanDefinitionVisitor, applying the specified
 	 * value resolver to all bean metadata values.
+	 *
 	 * @param valueResolver the StringValueResolver to apply
 	 */
 	public BeanDefinitionVisitor(StringValueResolver valueResolver) {
@@ -64,12 +64,15 @@ public class BeanDefinitionVisitor {
 	protected BeanDefinitionVisitor() {
 	}
 
-
 	/**
 	 * Traverse the given BeanDefinition object and the MutablePropertyValues
 	 * and ConstructorArgumentValues contained in them.
+	 *
 	 * @param beanDefinition the BeanDefinition object to traverse
 	 * @see #resolveStringValue(String)
+	 * <p>
+	 * 该方法访问了 BeanDefinition 中所有值得访问的东西了，
+	 * 包括 parent 、class 、factory-bean 、factory-method 、scope 、property 、constructor-arg
 	 */
 	public void visitBeanDefinition(BeanDefinition beanDefinition) {
 		visitParentName(beanDefinition);
@@ -77,6 +80,8 @@ public class BeanDefinitionVisitor {
 		visitFactoryBeanName(beanDefinition);
 		visitFactoryMethodName(beanDefinition);
 		visitScope(beanDefinition);
+
+		// 访问 Properties 配置文件的属性，具体解析见函数体内
 		if (beanDefinition.hasPropertyValues()) {
 			visitPropertyValues(beanDefinition.getPropertyValues());
 		}
@@ -137,11 +142,19 @@ public class BeanDefinitionVisitor {
 		}
 	}
 
+	/**
+	 * 访问 Properties 配置文件的属性
+	 *
+	 * @param pvs
+	 */
 	protected void visitPropertyValues(MutablePropertyValues pvs) {
 		PropertyValue[] pvArray = pvs.getPropertyValues();
+		// 遍历 PropertyValue 数组
 		for (PropertyValue pv : pvArray) {
+			// 对属性数组进行遍历，调用 #resolveValue(Object value)方法，对属性进行解析获取最新值，如果新值和旧值不等，则用新值替换旧值，具体解析见函数体内
 			Object newVal = resolveValue(pv.getValue());
 			if (!ObjectUtils.nullSafeEquals(newVal, pv.getValue())) {
+				// 设置到 PropertyValue 中
 				pvs.add(pv.getName(), newVal);
 			}
 		}
@@ -165,16 +178,20 @@ public class BeanDefinitionVisitor {
 		}
 	}
 
+	/**
+	 * 对属性进行解析获取最新值，如果新值和旧值不等，则用新值替换旧值
+	 *
+	 * @param value
+	 * @return
+	 */
 	@SuppressWarnings("rawtypes")
 	@Nullable
 	protected Object resolveValue(@Nullable Object value) {
 		if (value instanceof BeanDefinition) {
 			visitBeanDefinition((BeanDefinition) value);
-		}
-		else if (value instanceof BeanDefinitionHolder) {
+		} else if (value instanceof BeanDefinitionHolder) {
 			visitBeanDefinition(((BeanDefinitionHolder) value).getBeanDefinition());
-		}
-		else if (value instanceof RuntimeBeanReference) {
+		} else if (value instanceof RuntimeBeanReference) {
 			RuntimeBeanReference ref = (RuntimeBeanReference) value;
 			String newBeanName = resolveStringValue(ref.getBeanName());
 			if (newBeanName == null) {
@@ -183,8 +200,7 @@ public class BeanDefinitionVisitor {
 			if (!newBeanName.equals(ref.getBeanName())) {
 				return new RuntimeBeanReference(newBeanName);
 			}
-		}
-		else if (value instanceof RuntimeBeanNameReference) {
+		} else if (value instanceof RuntimeBeanNameReference) {
 			RuntimeBeanNameReference ref = (RuntimeBeanNameReference) value;
 			String newBeanName = resolveStringValue(ref.getBeanName());
 			if (newBeanName == null) {
@@ -193,28 +209,23 @@ public class BeanDefinitionVisitor {
 			if (!newBeanName.equals(ref.getBeanName())) {
 				return new RuntimeBeanNameReference(newBeanName);
 			}
-		}
-		else if (value instanceof Object[]) {
+		} else if (value instanceof Object[]) {
 			visitArray((Object[]) value);
-		}
-		else if (value instanceof List) {
+		} else if (value instanceof List) {
 			visitList((List) value);
-		}
-		else if (value instanceof Set) {
+		} else if (value instanceof Set) {
 			visitSet((Set) value);
-		}
-		else if (value instanceof Map) {
+		} else if (value instanceof Map) {
 			visitMap((Map) value);
-		}
-		else if (value instanceof TypedStringValue) {
+		} else if (value instanceof TypedStringValue) {
 			TypedStringValue typedStringValue = (TypedStringValue) value;
 			String stringValue = typedStringValue.getValue();
 			if (stringValue != null) {
 				String visitedString = resolveStringValue(stringValue);
 				typedStringValue.setValue(visitedString);
 			}
-		}
-		else if (value instanceof String) {
+		} else if (value instanceof String) {
+			// 解析 String 类型的值，例如 Properties 配置文件中的都是 String，具体解析见函数体内
 			return resolveStringValue((String) value);
 		}
 		return value;
@@ -280,8 +291,11 @@ public class BeanDefinitionVisitor {
 
 	/**
 	 * Resolve the given String value, for example parsing placeholders.
+	 *
 	 * @param strVal the original String value
 	 * @return the resolved String value
+	 * <p>
+	 * 解析 String 类型的值，例如 Properties 配置文件中的都是 String
 	 */
 	@Nullable
 	protected String resolveStringValue(String strVal) {
@@ -289,6 +303,8 @@ public class BeanDefinitionVisitor {
 			throw new IllegalStateException("No StringValueResolver specified - pass a resolver " +
 					"object into the constructor or override the 'resolveStringValue' method");
 		}
+		// 解析真值，这个 valueResolver 是在构造 BeanDefinitionVisitor 实例时传入的 String 类型解析器： PlaceholderResolvingStringValueResolver
+		// 具体解析见函数体内，由 PropertyPlaceholderConfigurer.java 中内部类 PlaceholderResolvingStringValueResolver.java 实现
 		String resolvedValue = this.valueResolver.resolveStringValue(strVal);
 		// Return original String if not modified.
 		return (strVal.equals(resolvedValue) ? strVal : resolvedValue);

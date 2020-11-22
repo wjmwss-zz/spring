@@ -1033,6 +1033,16 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		return result;
 	}
 
+	/**
+	 * #applyBeanPostProcessorsBeforeInitialization(Object existingBean, String beanName)
+	 * Bean 实例初始化完成后，后置处理器的应用，后置处理器需要添加 beanPostProcessor，就是在这里添加的
+	 * <p>
+	 * 该函数的作用：
+	 * 将指定 BeanPostProcessor 注册到该 BeanFactory 创建的 bean 中，
+	 * 同时它是按照插入的顺序进行注册的，完全忽略 Ordered 接口所表达任何排序语义（在 BeanPostProcessor 中提供了一个 Ordered 顺序）
+	 *
+	 * @param beanPostProcessor the post-processor to register
+	 */
 	@Override
 	public void addBeanPostProcessor(BeanPostProcessor beanPostProcessor) {
 		Assert.notNull(beanPostProcessor, "BeanPostProcessor must not be null");

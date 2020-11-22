@@ -67,9 +67,9 @@ public class XmlBeanDefinitionReaderTests {
 	/**
 	 * XML Resource => XML Document => Bean Definition 测试用例
 	 * 容器初始化阶段：
-	 * 首先，通过某种方式加载 Configuration Metadata (主要是依据 Resource、ResourceLoader 两个体系) 。
-	 * 然后，容器会对加载的 Configuration MetaData 进行解析和分析，并将分析的信息组装成 BeanDefinition 。
-	 * 最后，将 BeanDefinition 保存注册到相应的 BeanDefinitionRegistry 中。
+	 * 首先，通过某种方式加载 Configuration Metadata (主要是依据 Resource、ResourceLoader 两个体系) ；
+	 * 然后，容器会对加载的 Configuration MetaData 进行解析和分析，并将分析的信息组装成 BeanDefinition ；
+	 * 最后，将 BeanDefinition 保存注册到相应的 BeanDefinitionRegistry 中；
 	 * 至此，Spring IoC 的初始化工作完成。
 	 * 加载 Bean 阶段：{@link XmlBeanCollectionTests#testRefSubelement}
 	 */

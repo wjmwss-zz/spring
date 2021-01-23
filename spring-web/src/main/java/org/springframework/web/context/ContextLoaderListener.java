@@ -30,9 +30,9 @@ import javax.servlet.ServletContextListener;
  *
  * @author Juergen Hoeller
  * @author Chris Beams
- * @since 17.02.2003
  * @see #setContextInitializers
  * @see org.springframework.web.WebApplicationInitializer
+ * @since 17.02.2003
  */
 public class ContextLoaderListener extends ContextLoader implements ServletContextListener {
 
@@ -48,6 +48,7 @@ public class ContextLoaderListener extends ContextLoader implements ServletConte
 	 * the attribute name {@link WebApplicationContext#ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE}
 	 * and the Spring application context will be closed when the {@link #contextDestroyed}
 	 * lifecycle method is invoked on this listener.
+	 *
 	 * @see ContextLoader
 	 * @see #ContextLoaderListener(WebApplicationContext)
 	 * @see #contextInitialized(ServletContextEvent)
@@ -86,6 +87,7 @@ public class ContextLoaderListener extends ContextLoader implements ServletConte
 	 * WebApplicationContext#ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE} and the Spring
 	 * application context will be closed when the {@link #contextDestroyed} lifecycle
 	 * method is invoked on this listener.
+	 *
 	 * @param context the application context to manage
 	 * @see #contextInitialized(ServletContextEvent)
 	 * @see #contextDestroyed(ServletContextEvent)
@@ -94,21 +96,23 @@ public class ContextLoaderListener extends ContextLoader implements ServletConte
 		super(context);
 	}
 
-
 	/**
 	 * Initialize the root web application context.
 	 */
 	@Override
 	public void contextInitialized(ServletContextEvent event) {
+		//初始化 WebApplicationContext，具体解析见函数体内:
+		// org.springframework.web.context.ContextLoader ，真正实现初始化和销毁 WebApplicationContext 容器的逻辑的类。
 		initWebApplicationContext(event.getServletContext());
 	}
-
 
 	/**
 	 * Close the root web application context.
 	 */
 	@Override
 	public void contextDestroyed(ServletContextEvent event) {
+		// 销毁 WebApplicationContext ，具体解析见函数体内:
+		// org.springframework.web.context.ContextLoader ，真正实现初始化和销毁 WebApplicationContext 容器的逻辑的类。
 		closeWebApplicationContext(event.getServletContext());
 		ContextCleanupListener.cleanupAttributes(event.getServletContext());
 	}
